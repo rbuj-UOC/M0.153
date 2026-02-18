@@ -1,0 +1,665 @@
+---
+title: Fonaments de programació i accés a base de dades en R
+subtitle: "Programari per a l'anàlisi de dades"
+subject: "Màster universitari en bioinformàtica i bioestadística"
+author: "Robert Buj"
+date: "18/02/2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    latex_engine: xelatex
+header-includes:
+  - \usepackage[catalan]{babel}
+toc-title: "Taula de continguts"
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    warning = FALSE, error = FALSE, message = FALSE,
+    # Opcions per a les figures
+    fig.align = "center"
+)
+suppressPackageStartupMessages({
+    library(datasets)
+    library(dplyr)
+    library(ggplot2)
+    library(knitr)
+    library(kableExtra)
+    library(sqldf)
+    library(RSQLite)
+    library(MASS)
+})
+```
+
+# Exercicis i casos pràctics amb R
+
+## Exercici 1
+
+A partir de les dades següents dels pacients d'un hospital:
+
+| Nom      | Edat | Gènere  | Pressió arterial | Colesterol |
+| -------- |:----:|:-------:|:----------------:|:----------:|
+| Pacient1 | 45   | Femení  | 120/80           | 180        |
+| Pacient2 | 32   | Masculí | 130/85           | 200        |
+| Pacient3 | 28   | Femení  | 110/70           | 150        |
+| Pacient4 | 55   | Masculí | 140/90           | 220        |
+| Pacient5 | 40   | Femení  | 125/75           | 190        |
+
+Creeu un data frame amb les dades dels pacients anteriors y: 1. Filtreu els pacients amb
+nivells de colesterol per sobre de 200. 2. Calculeu les estadístiques descriptives dels nivells
+de colesterol dels pacients.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+dades_pacients <- data.frame(
+    Nom = c("Pacient1", "Pacient2", "Pacient3", "Pacient4", "Pacient5"),
+    Edat = c(45, 32, 28, 55, 40),
+    Gènere = c("Femení", "Masculí", "Femení", "Masculí", "Femení"),
+    Pressió_arterial = c("120/80", "130/85", "110/70", "140/90", "125/75"),
+    Colesterol = c(180, 200, 150, 220, 190)
+)
+dades_pacients
+# Filtrar pacients amb colesterol per sobre de 200
+pacients_colesterol_alt <- dades_pacients[dades_pacients$Colesterol > 200, ]
+# Calcular estadístiques descriptives dels nivells de colesterol dels pacients
+estadistiques_colesterol <- pacients_colesterol_alt |>
+    summarize(
+        mitjana_colesterol = mean(Colesterol),
+        desviacio_estandard_colesterol = sd(Colesterol),
+        maxim_colesterol = max(Colesterol),
+        minim_colesterol = min(Colesterol)
+    )
+# Mostrar el data frame de pacients amb colesterol alt i estadístiques
+# descriptives
+print(pacients_colesterol_alt)
+print("Estadístiques de nivells de colesterol en pacients amb colesterol alt:")
+print(estadistiques_colesterol)
+```
+
+## Exercici 2
+
+El percentatge de greix corporal òptim d'un individu depèn de l'edat i del
+gènere. Per això, en general: Percentatge massa corporal.
+
+Edat (anys) Dona (%) Home (%) 10-30 20-26 12-18 31-40 21-27 13-19 41-50 22-28
+14-20 51-60 22-30 16-20 61 o més 22-31 17-21 Nota.- Aquests valors poden variar lleugerament
+segons l'origen de la publicació. (Font: http://nutricionymultinivel.blogspot.com/p/taules-de-valors-de-la-organizacion.html).
+Definiu variables que representin l'edat i el gènere d'un individu i, en funció
+del valor que els assigneu, mostreu el percentatge de massa corporal òptim que
+els correspondria segons la taula anterior.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# definim les variables sexe i edat, assignant uns determinats valors
+sexe <- "dona"
+edat <- 25
+# avaluem els valors de la massa corporal òptima segons gènere i edat
+if (sexe == "dona") {
+    if (edat >= 10 && edat <= 30) {
+        imc_optim <- "20-26%"
+    } else if (edat >= 31 && edat <= 40) {
+        imc_optim <- "21-27%"
+    } else if (edat >= 41 && edat <= 50) {
+        imc_optim <- "22-28%"
+    } else if (edat >= 51 && edat <= 60) {
+        imc_optim <- "22-30%"
+    } else if (edat >= 61) {
+        imc_optim <- "22-31%"
+    } else {
+        imc_optim <- "No registrat"
+    }
+} else if (sexe == "home") {
+    if (edat >= 10 && edat <= 30) {
+        imc_optim <- "12-18%"
+    } else if (edat >= 31 && edat <= 40) {
+        imc_optim <- "13-19%"
+    } else if (edat >= 41 && edat <= 50) {
+        imc_optim <- "14-20%"
+    } else if (edat >= 51 && edat <= 60) {
+        imc_optim <- "16-20%"
+    } else if (edat >= 61) {
+        imc_optim <- "17-21%"
+    } else {
+        imc_optim <- "No registrat"
+    }
+} else {
+    imc_optim <- "No registrat"
+}
+# a partir dels valors inicials d'edat i gènere, mostrem el valor òptim de la
+# massa corporal
+print(imc_optim)
+```
+
+## Exercici 3
+
+A partir del conjunt de dades `anorexia` del paquet `MASS`, calculeu el
+percentatge de pacients que han dut a terme cada tipus de tractament.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("anorexia")
+# definim els comptadors de cada tipus de tractament
+p_cont <- 0
+p_cbt <- 0
+p_ft <- 0
+tractaments <- c(anorexia$Treat)
+# definim la variable que utilitzarem per recórrer els registres
+for (i in 1:length(tractaments)) {
+    if (anorexia$Treat[i] ==
+        "Cont") {
+        p_cont <- p_cont + 1
+    } else if (anorexia$Treat[i] ==
+        "CBT") {
+        p_cbt <- p_cbt + 1
+    } else {
+        p_ft <- p_ft + 1
+    }
+}
+# calculem els percentatges de cada tractament
+porc_cont <- p_cont / length(tractaments)
+porc_cbt <- p_cbt / length(tractaments)
+porc_ft <- p_ft / length(tractaments)
+# mostrem els valors dels percentatges
+print(porc_cont)
+print(porc_cbt)
+print(porc_ft)
+```
+
+## Exercici 4
+
+A partir del conjunt de dades `birthwt` del paquet `MASS`, calculeu quants
+nounats amb un pes inferior a 2.600 grams corresponen a mares menors de vint
+anys i fumadores.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("birthwt")
+# comptem quants nounats tenen un pes inferior a 2.600 grams i corresponen a
+# mares menors de vint anys i fumadores
+comptador <- 0
+for (i in 1:length(birthwt$bwt)) {
+    if (birthwt$bwt[i] == 1 && birthwt$age[i] < 20 && birthwt$bwt[i] < 2600) {
+        comptador <- comptador + 1
+    }
+}
+print(comptador)
+```
+
+## Exercici 5
+
+Suposem que volem generar un registre mèdic de pacients que inclogui informació
+com nom, edat, diagnòstic i nivells de glucosa en sang, amb les dades de
+pacients següents:
+
+```{r, attr.source=".numberLines"}
+noms <- c("Anna", "Lluis", "Maria", "Carles", "Elena")
+edats <- c(45, 32, 28, 55, 40)
+diagnostics <- c("Diabetis", "Hipertensio", "Sa", "Hipertensio", "Asma")
+glucosa <- c(125, 140, 95, 160, 110)
+```
+
+Definiu una funció anomenada `crear_registre_medic` que agafi els quatre vectors
+anteriors com a arguments (`noms`, `edats`, `diagnòstics` i `glucosa`) i creï un
+data frame que representa un registre mèdic de pacients. Finalment, el resultat
+per pantalla haurà de ser un data frame que conté informació detallada sobre
+cada pacient, incloent el nom, edat, diagnòstic i nivells de glucosa en sang.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+crear_registre_medic <- function(noms, edats, diagnostics, glucosa) {
+    registre_medic <- data.frame(
+        Nom = noms,
+        Edat = edats,
+        Diagnòstic = diagnostics,
+        Glucosa = glucosa
+    )
+    return(registre_medic)
+}
+registre_medic <- crear_registre_medic(noms, edats, diagnostics, glucosa)
+registre_medic
+```
+
+## Exercici 6
+
+A partir del conjunt de dades `birthwt` del paquet `MASS`, deseu en un vector
+els pesos dels nounats les mares dels quals tinguin menys de vint anys. Calculeu
+la mitjana i representeu gràficament aquest vector (per exemple, un diagrama de
+punts).
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("birthwt")
+# deseu en un vector els pesos dels nounats les mares dels quals tinguin menys de vint anys
+pesos_nounats <- c()
+for (i in 1:length(birthwt$bwt)) {
+    if (birthwt$age[i] < 20) {
+        pesos_nounats <- c(pesos_nounats, birthwt$bwt[i])
+    }
+}
+# calculeu la mitjana dels pesos dels nounats
+mitjana_pesos <- mean(pesos_nounats)
+print(mitjana_pesos)
+# representeu gràficament aquest vector (diagrama de punts)
+plot(
+    pesos_nounats,
+    main = "Pesos dels nounats de mares menors de 20 anys",
+    xlab = "Nounats",
+    ylab = "Pes (grams)",
+    pch = 16,
+    col = "blue"
+)
+```
+
+## Exercici 7
+
+A partir dels exemples treballats de definició de funcions, definiu dues
+funcions, una que calculi l'IMC d'un individu i una altra que calculi el
+percentatge de pes corporal òptim en funció de l'edat i el gènere. En totes dues
+funcions, cal definir els paràmetres que corresponguin.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+calcular_imc <- function(pes, altura) {
+    imc <- pes / (altura^2)
+    return(imc)
+}
+calcular_percentatge_pes_optim <- function(sexe, edat) {
+    if (sexe == "dona") {
+        if (edat >= 10 && edat <= 30) {
+            imc_optim <- "20-26%"
+        } else if (edat >= 31 && edat <= 40) {
+            imc_optim <- "21-27%"
+        } else if (edat >= 41 && edat <= 50) {
+            imc_optim <- "22-28%"
+        } else if (edat >= 51 && edat <= 60) {
+            imc_optim <- "22-30%"
+        } else if (edat >= 61) {
+            imc_optim <- "22-31%"
+        } else {
+            imc_optim <- "No registrat"
+        }
+    } else if (sexe == "home") {
+        if (edat >= 10 && edat <= 30) {
+            imc_optim <- "12-18%"
+        } else if (edat >= 31 && edat <= 40) {
+            imc_optim <- "13-19%"
+        } else if (edat >= 41 && edat <= 50) {
+            imc_optim <- "14-20%"
+        } else if (edat >= 51 && edat <= 60) {
+            imc_optim <- "16-20%"
+        } else if (edat >= 61) {
+            imc_optim <- "17-21%"
+        } else {
+            imc_optim <- "No registrat"
+        }
+    } else {
+        imc_optim <- "No registrat"
+    }
+    return(imc_optim)
+}
+calcular_imc(pes = 70, altura = 1.75)
+calcular_percentatge_pes_optim(sexe = "dona", edat = 25)
+```
+
+## Exercici 8
+
+Si considerem el conjunt de dades `birthwt` del paquet `MASS`, creeu una funció
+que mostri els valors de pes dels nounats les mares dels quals siguin de raça
+blanca i el pes de les quals estigui per sota de la mitjana dels pesos
+observats.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+mostrar_pes_nounats_blancs_sota_mitjana <- function() {
+    data("birthwt")
+    # Filtrar els nounats de mares de raça blanca
+    nounats_blancs <- birthwt[birthwt$race == 1, ]
+    # Calcular la mitjana dels pesos dels nounats
+    mitjana_pesos <- mean(nounats_blancs$bwt)
+    # Mostrar els valors de pes dels nounats que tenen un pes per sota de la
+    # mitjana
+    pesos_sota_mitjana <- nounats_blancs[
+        nounats_blancs$bwt < mitjana_pesos, "bwt"
+    ]
+    print(pesos_sota_mitjana)
+}
+mostrar_pes_nounats_blancs_sota_mitjana()
+```
+
+## Exercici 9
+
+A partir del conjunt de dades `Melanoma` del paquet `MASS` que fa referència a
+les dades de supervivència de melanoma maligne, es demana resoldre les qüestions
+següents:
+
+a) Definiu un vector que desi les edats dels individus observats i calculeu la
+   mitjana, el màxim i el mínim d'aquesta distribució.
+b) Definiu una funció que recorri el conjunt de dades i mostri quants dels
+   individus observats van morir a causa del melanoma, quants van sobreviure i
+   quants van morir per diferents causes.
+c) Definiu una funció que recorri el conjunt de dades i mostri la proporció
+   d'homes i de dones que van morir per melanoma.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# carreguem les dades de Melanoma
+data("Melanoma")
+# mostrem les dades de Melanoma
+head(Melanoma)
+# vector que desa les edats dels individus observats
+edats <- Melanoma$age
+# calculem la mitjana, el màxim i el mínim de les edats
+mitjana_edats <- mean(edats)
+maxim_edats <- max(edats)
+minim_edats <- min(edats)
+print(paste("Mitjana d'edats:", mitjana_edats))
+print(paste("Màxim d'edats:", maxim_edats))
+print(paste("Mínim d'edats:", minim_edats))
+# funció que mostra quants individus van morir a causa del melanoma, quants van
+# sobreviure i quants van morir per diferents causes
+contar_resultats_melanoma <- function() {
+    # comptar els individus que van morir a causa del melanoma
+    morts_melanoma <- sum(Melanoma$status == 1)
+    # comptar els individus que van sobreviure
+    sobrevivents <- sum(Melanoma$status == 2)
+    # comptar els individus que van morir per altres causes
+    altres_causes <- sum(Melanoma$status == 3)
+    # mostrar els resultats
+    print(paste(
+        "Individus que van morir a causa del melanoma:", morts_melanoma
+    ))
+    print(paste("Individus que van sobreviure:", sobrevivents))
+    print(paste("Individus que van morir per altres causes:", altres_causes))
+}
+contar_resultats_melanoma()
+# funció que mostra la proporció d'homes i de dones que van morir per melanoma
+proporcio_morts_melanoma <- function() {
+    # comptar el nombre total d'individus que van morir per melanoma
+    total_morts_melanoma <- sum(Melanoma$status == 1)
+    # comptar el nombre d'homes que van morir per melanoma
+    morts_homes <- sum(Melanoma$status == 1 & Melanoma$sex == 1)
+    # comptar el nombre de dones que van morir per melanoma
+    morts_dones <- sum(Melanoma$status == 1 & Melanoma$sex == 0)
+    # calcular la proporció d'homes i de dones que van morir per melanoma
+    proporcio_homes <- morts_homes / total_morts_melanoma
+    proporcio_dones <- morts_dones / total_morts_melanoma
+    # mostrar els resultats
+    print(
+        paste(
+            "Proporció d'homes que van morir per melanoma:",
+            proporcio_homes
+        )
+    )
+    print(
+        paste(
+            "Proporció de dones que van morir per melanoma:",
+            proporcio_dones
+        )
+    )
+}
+proporcio_morts_melanoma()
+```
+
+## Exercici 10
+
+A partir del conjunt de dades anterior `airquality` treballat anteriorment,
+resoleu les consultes següents:
+
+1) Mostreu la mitjana del factor Ozone.
+2) Mostreu les dades d'Ozone, Solar.R i Wind dels mesos (Month) 5, 6 i 7.
+3) Mostreu la informació anterior ordenada per Month.
+4) Mostreu les dades de Wind agrupades per Month. Nota: Utilitzeu la sintaxi
+   adequada per mostrar per pantalla solament els cinc primers registres.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+db <- "RSQLite"::datasetsDb()
+dbListTables(db) ## Mostrem els conjunts de dades
+# Mitjana del factor *Ozone*.
+sqldf("SELECT AVG(Ozone) FROM airquality")
+# Dades de *Ozone*, *Solar.R* i *Wind* dels mesos(*Month*) 5, 6 i 7.
+head(sqldf("SELECT Ozone,[Solar.R],Wind FROM airquality where Month IN (5,6,7)"))
+# Ordenar per *Month*
+head(sqldf("SELECT Ozone,[Solar.R],Wind, Month FROM airquality where Month IN (5,6,7) ORDER BY Month DESC"))
+# Mostreu les dades de *Wind*, agrupades per *Month*.
+sqldf("SELECT Wind,Month FROM airquality GROUP BY Month")
+```
+
+## Cas pràctic 1. La sèrie de Fibonacci en les molècules d'ADN
+
+Segons les recerques de Mark E. Curtis, cada gir complet de la doble hèlix de
+l'ADN mesura 21 Å d'amplada per 34 Å de llargada; 34 i 21 són dos nombres
+consecutius en la successió de Fibonacci. Per tant, el quocient, 1.6190476,
+aproxima de prop la Raó Àuria φ=1.6180339… (Font: http://www.sacred-geometry.es/?q=es/content/phi-en-la-estructura-del-adn).
+
+Es demana:
+
+a) Implementeu en R una funció que, donat un valor n, mostri els valors de la
+   sèrie de Fibonacci fins a aquest valor determinat.
+b) Per a quins valors de n localitzem, en la sèrie de Fibonacci, les mesures de
+   la doble hèlix de la molècula d'ADN?
+c) Complementeu el codi de l'apartat a afegint-hi una nova funció (o les
+   instruccions que corresponguin en la funció creada anteriorment) de manera
+   que, per a un determinat valor n, mostri les proporcions successives dels
+   valors de la sèrie de Fibonacci. A partir de quin valor de n, aquesta
+   proporció es va aproximant a la Raó Àuria?
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# a) Funció que mostra els valors de la sèrie de Fibonacci fins a un valor n
+fibonacci <- function(n) {
+    fib <- numeric(n)
+    fib[1] <- 0
+    if (n > 1) {
+        fib[2] <- 1
+    }
+    for (i in 3:n) {
+        fib[i] <- fib[i - 1] + fib[i - 2]
+    }
+    return(fib)
+}
+fibonacci(5)
+fibonacci(8)
+fibonacci(15)
+# b) Localitzem les mesures de la doble hèlix de l'ADN en la sèrie de Fibonacci
+fibonacci(9)
+fibonacci(10)
+# c) Completem el codi de l'apartat a per mostrar les proporcions successives
+#    dels valors de la sèrie de Fibonacci
+fibonacci_proporcions <- function(n) {
+    fib <- fibonacci(n)
+    proporcions <- numeric(n - 2)
+    for (i in 3:n) {
+        proporcions[i - 2] <- fib[i] / fib[i - 1]
+    }
+    return(proporcions)
+}
+fibonacci_proporcions(7)
+fibonacci_proporcions(15)
+```
+
+## Cas pràctic 2. Seqüències d'ADN
+
+La seqüència d'ADN d'un individu conté informació genètica d'aquest. Actualment,
+hi ha tècniques que permeten dur a terme aquesta seqüenciació i aportar dades
+per investigar el comportament de diferents tipus d'organismes biològics. (Font:
+https://es.wikipedia.org/wiki/Secuenciaci%C3%B3n_del_ADN). Es demana generar
+una seqüència d'ADN i calcular-ne l'invers i el complementari.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+set.seed(123)
+# Generar una seqüència d'ADN
+generar_sequencia_adn <- function(longitud) {
+    bases <- c("A", "T", "G", "C")
+    sequencia <- sample(bases, longitud, replace = TRUE)
+    return(paste(sequencia, collapse = ""))
+}
+# Obtenir la seqüència d'ADN generada
+obtenir_invers_adn <- function(sequencia) {
+    invers <- rev(strsplit(sequencia, "")[[1]])
+    return(paste(invers, collapse = ""))
+}
+# Complementari de la seqüència
+obtenir_complementari_adn <- function(sequencia) {
+    complementari <- chartr("ATCG", "TAGC", sequencia)
+    return(complementari)
+}
+# Generar una seqüència d'ADN aleatòria
+sequencia_original <- generar_sequencia_adn(20)
+# Obtenir l'invers de la seqüència
+sequencia_inversa <- obtenir_invers_adn(sequencia_original)
+# Obtenir el complementari de la seqüència
+sequencia_complementaria <- obtenir_complementari_adn(sequencia_original)
+# Mostrar els resultats
+cat("Seqüència original: ", sequencia_original, "\n")
+cat("Seqüència inversa: ", sequencia_inversa, "\n")
+cat("Seqüència complementària: ", sequencia_complementaria, "\n")
+```
+
+## Cas pràctic 3. Gestió de base de dades de pacients
+
+Suposem que pretenem gestionar la informació d'una base de dades de pacients
+d'un hospital. En principi, disposem de dues taules, pacients i
+registres_mèdics.
+
+De la taula pacients, disposem de les dades següents: pacients (nom, edat,
+gènere, condicio_medica) (`Pacient1', 45, 'Femeni', 'Diabetis'), ('Pacient2',
+32, 'Masculi', 'Hipertensio'), ('Pacient3', 28, 'Femeni', 'Sa'), ('Pacient4',
+55, 'Masculi', 'Hipertensio'), ('Pacient5', 40, 'Femeni', 'Asma').
+
+De la taula registres_medics, disposem de les dades següents: registres_medics
+(pacient_id, data, nivell_glucosa) (1, '2023-08-01', 125.5), (2, '2023-08-01',
+140.2), (3, '2023-08-01', 95.8), (4, '2023-08-01', 160.6), (5, '2023-08-01',
+110.9).
+
+Es demana utilitzar les instruccions d'accés a les bases de dades per resoldre
+les qüestions següents:
+
+1) Creeu la base de dades (Hospital), les taules i els registres corresponents i
+   la connexió des d'R.
+2) Mostreu pacients amb una condició mèdica específica (per exemple, diabetis).
+3) Calculeu estadístiques descriptives dels nivells de glucosa en sang.
+4) Obtingueu els registres mèdics de pacients amb hipertensió i les seves
+   estadístiques de glucosa.
+5) Calculeu l'edat mitjana de pacients amb asma per gènere.
+6) Creeu un gràfic de barres per mostrar la distribució de gènere en pacients
+   amb diabetis.
+
+És important recordar carregar els paquets RSQLite, dplyr i, també, ggplot2.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Pas 1: Crear la base de dades, les taules i els registres corresponents i la
+# connexió des d'R
+# Connectar a la base de dades SQLite
+connexio <- dbConnect(SQLite(), "hospital.db")
+# Crear la taula "pacients" i agregar registres
+pacients <- data.frame(
+    nom = c("Pacient1", "Pacient2", "Pacient3", "Pacient4", "Pacient5"),
+    edat = c(45, 32, 28, 55, 40),
+    genere = c("Femeni", "Masculi", "Femeni", "Masculi", "Femeni"),
+    condicio_medica = c("Diabetis", "Hipertensio", "Sa", "Hipertensio", "Asma")
+)
+dbWriteTable(connexio, "pacients", pacients, overwrite = TRUE)
+# Crear la taula "registres_medics" i agregar registres
+registres_medics <- data.frame(
+    pacient_id = c(1, 2, 3, 4, 5),
+    data = as.Date("2023-08-01"),
+    nivell_glucosa = c(125.5, 140.2, 95.8, 160.6, 110.9)
+)
+dbWriteTable(connexio, "registres_medics", registres_medics, overwrite = TRUE)
+# Pas 2: Mostrar pacients amb una condició mèdica específica (per exemple,
+# diabetis)
+pacients_diabetis <-
+    dbGetQuery(
+        connexio,
+        "SELECT *
+        FROM pacients
+        WHERE condicio_medica = 'Diabetis'"
+    )
+print(pacients_diabetis)
+# Pas 3: Calcular estadístiques descriptives dels nivells de glucosa en sang
+estadistiques_glucosa <-
+    dbGetQuery(
+        connexio,
+        "SELECT AVG(nivell_glucosa) AS mitjana_glucosa,
+        MIN(nivell_glucosa) AS minim_glucosa,
+        MAX(nivell_glucosa) AS maxim_glucosa
+        FROM registres_medics"
+    )
+print(estadistiques_glucosa)
+# Pas 4: Obtenir els registres mèdics de pacients amb hipertensió i les seves
+# estadístiques de glucosa
+registres_hipertensio <-
+    dbGetQuery(
+        connexio,
+        "SELECT r.*
+        FROM registres_medics r
+        JOIN pacients p ON r.pacient_id = p.rowid
+        WHERE p.condicio_medica = 'Hipertensio'"
+    )
+estadistiques_glucosa_hipertensio <-
+    dbGetQuery(
+        connexio,
+        "SELECT AVG(nivell_glucosa) AS mitjana_glucosa,
+        MAX(nivell_glucosa) AS màxim_glucosa,
+        MIN(nivell_glucosa) AS mínim_glucosa
+        FROM registres_medics
+        WHERE pacient_id IN (SELECT rowid FROM pacients WHERE condicio_medica = 'Hipertensio')"
+    )
+print(registres_hipertensio)
+print(estadistiques_glucosa_hipertensio)
+# Pas 5: Calcular l'edat mitjana de pacients amb asma per gènere
+edat_mitjana_asma <-
+    dbGetQuery(
+        connexio,
+        "SELECT genere,
+        AVG(edat) AS edat_mitjana
+        FROM pacients
+        WHERE condicio_medica = 'Asma'
+        GROUP BY genere"
+    )
+print(edat_mitjana_asma)
+# Pas 6: Crear un gràfic de barres per mostrar la distribució de gènere en
+# pacients amb diabetis
+genere_diabetis <-
+    dbGetQuery(
+        connexio,
+        "SELECT genere, COUNT(*) AS quantitat
+        FROM pacients
+        WHERE condicio_medica = 'Diabetis'
+        GROUP BY genere"
+    )
+# Crear un gràfic de barres
+ggplot(genere_diabetis, aes(x = genere, y = quantitat, fill = genere)) +
+    geom_bar(stat = "identity") +
+    labs(
+        title = "Distribució de Gènere en Pacients amb Diabetis",
+        x = "Gènere",
+        y = "Quantitat"
+    ) +
+    theme_minimal()
+```

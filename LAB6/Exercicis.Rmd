@@ -1,0 +1,445 @@
+---
+title: Paquets de R per a la bioinformàtica
+subtitle: "Programari per a l'anàlisi de dades"
+subject: "Màster universitari en bioinformàtica i bioestadística"
+author: "Robert Buj"
+date: "18/02/2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    latex_engine: xelatex
+header-includes:
+  - \usepackage[catalan]{babel}
+toc-title: "Taula de continguts"
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    warning = FALSE, error = FALSE, message = FALSE,
+    # Opcions per a les figures
+    fig.align = "center"
+)
+suppressPackageStartupMessages({
+    library(datasets)
+    library(dplyr)
+    library(ggplot2)
+    library(knitr)
+    library(kableExtra)
+    library(shiny)
+    library(survival)
+})
+```
+
+# Exercicis i casos pràctics amb R
+
+## Exercici 1. Aplicació Shiny a partir d'un conjunt de dades
+
+A partir del conjunt de dades heart del paquet survival, feu una aplicació Shiny
+que a partir de la selecció de dues variables del conjunt de dades representi un
+gràfic de dispersió i un de línies, a més d'un histograma sol per a la variable
+horitzontal seleccionada. Per fer aquest exercici podeu basar-vos en l'Exemple 2
+realitzat en l'apartat 1.1. Ecosistema de R: Entorns reproduïbles i
+visualització de dades. S'aconsella ampliar coneixements en l'ús de diferents
+paràmetres en les funcions definides, així com explorar un altre tipus de
+funcionalitats per aprofundir en l'estudi del conjunt de dades, a criteri de
+l'estudiant.
+
+**Resposta:**
+
+No executeu el codi de sota, ja que és una aplicació Shiny que s'ha de executar
+des del terminal.
+
+```shell
+conda activate ./.conda
+Rscript LAB6/ex1.R
+```
+
+Codi de l'aplicació Shiny:
+
+```{r, code=readLines("ex1.R"), attr.source=".numberLines" , eval=FALSE}
+```
+
+## Exercici 2. Explorador de dades
+
+Mostreu un conjunt de dades a partir d'un arxiu .csv a la vostra elecció que
+mostri també el resum estadístic del conjunt de dades triat. D'altra banda,
+afegiu la selecció d'una variable del conjunt de dades a partir de la qual es
+representi un gràfic del tipus histograma.
+
+**Resposta:**
+
+No executeu el codi de sota, ja que és una aplicació Shiny que s'ha de executar
+des del terminal.
+
+```shell
+conda activate ./.conda
+Rscript LAB6/ex2.R
+```
+
+Codi de l'aplicació Shiny:
+
+```{r, code=readLines("ex2.R"), attr.source=".numberLines" , eval=FALSE}
+```
+
+## Exercici 3. Aplicació Shiny per a conjunt de dades Iris
+
+A partir del conjunt de dades `Iris`, feu una aplicació Shiny per mostrar, a
+partir d'una de les variables per a seleccionar del conjunt de dades, els
+gràfics `boxplot` i `barplot`.
+
+**Resposta:**
+
+No executeu el codi de sota, ja que és una aplicació Shiny que s'ha de executar
+des del terminal.
+
+```shell
+conda activate ./.conda
+Rscript LAB6/ex3.R
+```
+
+Codi de l'aplicació Shiny:
+
+```{r, code=readLines("ex3.R"), attr.source=".numberLines" , eval=FALSE}
+```
+
+## Exercici 4. Bioconductor amb el paquet GenomicFeatures
+
+Utilitzant el paquet `GenomicFeatures`, definiu un vector amb la informació de
+cada gen, la posició inicial i final, la direcció del bri (`strand`),
+l'identificador del gen (`id`) i el tipus de gen (`type`).
+
+Una orientació per definir algunes d'aquestes dades les podeu trobar a l'Exemple
+4. ***Bioconductor utilitzant el paquet GenomicFeatures***, i podem definir la
+direcció del bri i el tipus de gen de la manera següent:
+
+```
+strand = c("+", "-", "+"), gene_type = c("protein_coding", "non_coding", "protein_coding")
+```
+
+Mostreu els detalls utilitzant un objecte de tipus GRanges.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el paquet GenomicFeatures
+library(GenomicFeatures)
+# Creem un conjunt de gens més detallat
+gens_detalls <- data.frame(
+    seqnames = c("chr1", "chr2", "chr1"),
+    start = c(100, 200, 300),
+    end = c(200, 300, 400),
+    gene_id = c("Gene1", "Gene2", "Gene3"),
+    strand = c("+", "-", "+"),
+    gene_type = c("protein_coding", "non_coding", "protein_coding"),
+    stringsAsFactors = FALSE
+)
+# Creem un objecte `GRanges` que representa la informació dels gens
+gr_detalls <- GRanges(
+    seqnames = gens_detalls$seqnames,
+    ranges = IRanges(
+        start = gens_detalls$start, end =
+            gens_detalls$end
+    ),
+    strand = gens_detalls$strand,
+    id = gens_detalls$gene_id,
+    type = gens_detalls$gene_type
+)
+# Mostrem la informació detallada dels gens
+print(gr_detalls)
+```
+
+## Exercici 5. Bioconductor amb el paquet limma
+
+El paquet `limma` és un paquet d'R que s'utilitza per analitzar dades
+d'expressió gènica i fer anàlisis estadístiques en experiments de bioxips i
+seqüenciació d'ARN (ARN-Seq). La sigla limma significa ***linear models for
+biochip data***. A partir de les dades següents:
+
+| Gen   | Sample1 | Sample2 | Sample3 | Sample4 | Sample5 | Sample6 |
+|-------|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
+| Gene1 | 5       | 6       | 7       | 8       | 9       | 10      |
+| Gene2 | 4       | 5       | 6       | 7       | 8       | 9       |
+| Gene3 | 3       | 4       | 5       | 6       | 7       | 8       |
+
+Feu una anàlisi d'expressió gènica diferencial amb el paquet `limma`.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el paquet necessari
+library(limma)
+# Carreguem dades de mostra
+data <- read.table(header = TRUE, text = "
+Gene Sample1 Sample2 Sample3 Sample4 Sample5 Sample6
+Gene1 5 6 7 8 9 10
+Gene2 4 5 6 7 8 9
+Gene3 3 4 5 6 7 8
+")
+# Definim els grups
+group <- factor(c("Group1", "Group1", "Group1", "Group2", "Group2", "Group2"))
+# Creem un objecte DGEList
+exprs_data <- data[, -1]
+rownames(exprs_data) <- data$Gene
+group <- factor(group)
+design <- model.matrix(~ 0 + group)
+colnames(design) <- levels(group)
+fit <- lmFit(exprs_data, design)
+# Fem l'anàlisi d'expressió gènica diferencial amb limma
+contrast <- makeContrasts(Group2 - Group1, levels = design)
+fit2 <- contrasts.fit(fit, contrast)
+fit2 <- eBayes(fit2)
+results <- topTable(fit2, coef = 1)
+# Mostrem els resultats
+print(results)
+```
+
+## Exercici 6. Bioconductor amb ComplexHeatMap
+
+El paquet `ComplexHeatMap` és útil per visualitzar dades de matriu en forma de
+mapes de calor complexos amb anotacions addicionals. A partir d'una matriu
+fictícia, creeu un objecte `HeatMap`, mostreu-lo i interpreteu-ne els resultats.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+library(ComplexHeatmap)
+library(circlize)
+# Simulem les dades d'una matriu a partir d'una de normal
+set.seed(123)
+matriu_exemple <- matrix(rnorm(100), ncol = 10)
+# Creem un objecte Heatmap
+heatmap_objecte <- Heatmap(matriu_exemple,
+    name = "Valor",
+    show_row_names = FALSE,
+    show_column_names = FALSE,
+    col = colorRamp2(c(-2, 0, 2), c(
+        "blue",
+        "white", "red"
+    ))
+)
+# Dibuixem el mapa de calor
+draw(heatmap_objecte, heatmap_legend_side = "right")
+```
+
+El mapa de calor té l'objectiu de visualitzar patrons i tendències en les dades.
+
+En aquest mapa de calor, els colors tenen la següent interpretació:
+- Blau: Representa valors baixos.
+- Blanc: Representa valors intermedis.
+- Vermell: Representa valors alts.
+
+La intensitat del color indica el nivell d'expressió o la magnitud del valor
+associat. Colors més intensos representen valors més alts o més baixos, segons
+la paleta de colors utilitzada. Les columnes representen diferents mostres o
+condicions i les files representen diferents elements o gens. Els patrons
+horitzontals (en files) poden indicar similituds o diferències en l'expressió de
+gens entre diferents elements. Els patrons verticals (en columnes) poden indicar
+similituds o diferències en l'expressió d'un gen al llarg de diferents
+condicions. L'agrupació (clusterització) de files o columnes pot suggerir
+similituds en els perfils d'expressió gènica.
+
+En aquest cas, les dades són simulades; no obstant això, en el context d'un
+estudi de gens, un canvi de color podria significar una resposta a determinades
+condicions.
+
+## Exercici 7. Bioconductor amb Biostrings
+
+El paquet `Biostrings` de Bioconductor en R està dissenyat per a la manipulació
+i l'anàlisi de seqüències biològiques. Suposem que definim les seqüències
+següents:
+
+```
+sequencia1: "ATCGAATCGA" sequencia2: "TAGCTAGCTA"
+```
+
+Combineu les seqüències i obtingueu el complement invers de cada seqüència.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+library(Biostrings)
+# Creem les seqüències d'ADN
+sequencia1 <- DNAString("ATCGAATCGA")
+sequencia2 <- DNAString("TAGCTAGCTA")
+# Combinem les seqüències en un DNAStringSet
+sequencies <- DNAStringSet(c(sequencia1, sequencia2))
+# Obtenim el complement invers de cada seqüència
+comp_invers <- reverseComplement(sequencies)
+# Imprimim les seqüències originals i els seus complements inversos
+cat("Sequencies Originals:\n")
+print(sequencies)
+cat("\nComplements Inversos de les Sequencies:\n")
+print(comp_invers)
+```
+
+## Exercici 8. Aplicacions del paquet caret
+
+A partir del paquet `caret` i del conjunt de dades `Iris`, creeu una partició
+del conjunt de dades sobre la variable `species` i creeu i entreneu un model
+de k-NN per fer prediccions. Finalment, mostreu la matriu de confusió i comenteu
+el resultat.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el paquet necessari
+library(caret)
+# Carreguem el conjunt de dades iris
+data(iris)
+# Creem una partició del conjunt de dades
+set.seed(123)
+training_indices <- createDataPartition(iris$Species, p = 0.7, list = FALSE)
+training_data <- iris[training_indices, ]
+testing_data <- iris[-training_indices, ]
+# Creem i entrenem un model de k-NN amb caret
+model <- train(
+    Species ~ .,
+    data = training_data, method = "knn",
+    trControl = trainControl(method = "cv")
+)
+# Fem prediccions en el conjunt de prova
+predictions <- predict(model, testing_data)
+# Mostrem la matriu de confusió i altres mètriques
+conf_matrix <- confusionMatrix(predictions, testing_data$Species)
+print(conf_matrix)
+```
+
+Segons el valor d'Accuracy, la precisió del model és del 97.78 %, la qual cosa
+indica que el 97.78 % de les prediccions van ser correctes en el conjunt de
+prova. Com que el valor de kappa és de 0.9667, és possible que hi hagi
+concordança significativa entre les prediccions del model i les classes
+d'espècies reals.
+
+Setosa: El model té un rendiment perfecte per a la classe Setosa, amb
+sensibilitat, especificitat i valor predictiu positiu del 100 %.
+
+Versicolor: També té un rendiment sòlid per a Versicolor, amb sensibilitat i
+valor predictiu positiu del 100 %, encara que l'especificitat és més baixa.
+
+Virginica: El model té una sensibilitat del 93.33 % per a la classe Virginica.
+
+El Balanced Accuracy indica que el model mostra un bon equilibri en la precisió
+de les tres classes, amb una precisió equilibrada del 100 % per a Setosa, 98.33
+% per a Versicolor i 96.67 % per a Virginica.
+
+Així doncs, el model de k-NN sembla bastant precís en la classificació de les
+flors en el conjunt de dades Iris, amb un rendiment més fort per a les classes
+Setosa i Versicolor.
+
+## Exercici 9. Aplicacions del paquet caret. Model de classificació random forest
+
+Suposem que tenim les següents dades de 5 pacients als quals se'ls han practicat
+algunes proves mèdiques i on, entre altres dades, s'indica si tenen o no la
+malaltia estudiada:
+
+```
+Edat = 30, 45, 50, 22, 65 Sexe = "M", "F", "M", "F", "M"
+ResultatProva1 = 0.1, 0.5, 0.8, 1.2, 0.9
+ResultatProva2 = 12, 9, 15, 8, 10
+Malaltia = "No", "No", "Sí", "Sí", "Sí"
+```
+
+Es demana entrenar un model de classificació supervisada, per exemple, el
+***random forest***.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+library(caret)
+# Creem un dataframe d'exemple
+dades <- data.frame(
+    Edat = c(30, 45, 50, 22, 65),
+    Sexe = c("M", "F", "M", "F", "M"),
+    ResultatProva1 = c(0.1, 0.5, 0.8, 1.2, 0.9),
+    ResultatProva2 = c(12, 9, 15, 8, 10),
+    Malaltia = c("No", "No", "Sí", "Sí", "Sí")
+)
+# Convertim la variable Sexe en factor
+dades$Sexe <- as.factor(dades$Sexe)
+# Definim el control de l'entrenament, validació creuada amb 5 folds
+control <- trainControl(method = "cv", number = 5)
+# Entrenem un model de classificació (per exemple, un model de bosc aleatori)
+model <- train(Malaltia ~ ., data = dades, method = "rf", trControl = control)
+# Vegem els resultats del model
+print(model)
+```
+
+La mostra és massa petita per extreure conclusions, no obstant això, de les
+dades obtingudes es pot suggerir que el model aconsegueix una precisió màxima
+del 60 %.
+
+## Exercici 10. Aplicació del paquet igraph a l'àmbit de les proteïnes
+
+Suposem que tenim la següent matriu d'adjacència que representa les interaccions
+entre proteïnes:
+
+```
+matrix_adjacencia ( 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0 )
+```
+
+Es demana representar gràficament la xarxa d'interaccions entre aquestes
+proteïnes.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+#  Creem la matriu d'adjacència que representa interaccions entre proteïnes
+matriu_adjacencia <- matrix(c(
+    0, 1, 1, 0,
+    1, 0, 1, 1,
+    1, 1, 0, 0,
+    0, 1, 0, 0
+), nrow = 4, byrow = TRUE)
+# Convertim la matriu en un objecte graph d'igraph
+xarxa_proteines <- igraph::graph_from_adjacency_matrix(
+    matriu_adjacencia,
+    mode = "undirected",
+    diag = FALSE
+)
+# Visualitzem la xarxa d'interaccions entre proteïnes
+plot(xarxa_proteines,
+    layout = igraph::layout_with_fr, # Algorisme de disposició per organitzar els nodes
+    vertex.label = 1:4, # Etiquetes dels nodes
+    vertex.color = "lightblue", # Color dels nodes
+    vertex.size = 30 # Grandària dels nodes
+)
+```
+
+## Cas pràctic 1
+
+A partir de Bioconductor, i utilitzant el paquet `Biostrings`, es demana fer una
+aplicació senzilla amb Shiny que sigui un comptador d'ocurrències de patrons
+d'ADN.
+
+Es requereix que la interfície que s'obtingui sigui similar a la següent:
+
+Per fer proves, es poden fer servir els valors següents:
+
+```
+seqüència: ATCGATCGATCGATCGATCGATCGATCGATCG
+patró: ATCG
+```
+
+**Resposta:**
+
+No executeu el codi de sota, ja que és una aplicació Shiny que s'ha de executar
+des del terminal.
+
+```shell
+conda activate ./.conda
+Rscript LAB6/cp1.R
+```
+
+Codi de l'aplicació Shiny:
+
+```{r, code=readLines("cp1.R"), attr.source=".numberLines" , eval=FALSE}
+```

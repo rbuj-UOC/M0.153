@@ -1,0 +1,354 @@
+---
+title: Probabilitat i simulació amb R
+subtitle: "Programari per a l'anàlisi de dades"
+subject: "Màster universitari en bioinformàtica i bioestadística"
+author: "Robert Buj"
+date: "18/02/2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    latex_engine: xelatex
+header-includes:
+  - \usepackage[catalan]{babel}
+toc-title: "Taula de continguts"
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    warning = FALSE, error = FALSE, message = FALSE,
+    # Opcions per a les figures
+    fig.align = "center"
+)
+suppressPackageStartupMessages({
+    library(datasets)
+    library(dplyr)
+    library(ggplot2)
+    library(gtools)
+    library(knitr)
+    library(kableExtra)
+})
+```
+
+# Exercicis i casos pràctics amb R
+
+## Exercici 1
+
+En un assaig clínic s'ha pres com a mostra un total de 100 pacients. La probabilitat que el
+pacient pateixi una malaltia cardiovascular és de **0.45**. Calculeu:
+
+a) La probabilitat que exactament 30 pacients pateixin aquesta malaltia.
+b) La probabilitat que almenys 15 pacients tinguin aquesta malaltia. Us sembla curiós aquest resultat?
+c) Obtingueu la probabilitat que entre 5 i 10 pacients (tots dos inclusivament) tinguin la malaltia.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Utilitzarem una distribució binomial
+# apartat a)
+n <- 100 # grandària de la mostra
+p <- 0.45 # probabilitat
+val1 <- 30
+dbinom(val1, n, p)
+# apartat b)
+val2 <- 14
+pbinom(val2, n, p, lower.tail = FALSE)
+# apartat c)
+val3 <- 5
+val2 <- 9
+pbinom(val3, n, p) - pbinom(val2, n, p)
+```
+
+## Exercici 2
+
+a) Genereu **500** observacions d'una distribució binomial, B(1, 0.5) i
+   emmagatzemeu les dades en un vector anomenat **Bino**. Calculeu les
+   freqüències absolutes i relatives dels valors generats en el vector anterior.
+   Què observeu amb el resultat que heu obtingut?
+b) Si de **mitjana hi ha 12 individus** per minut travessant un carrer, calculeu
+   la probabilitat que **18 o més** individus travessin aquest carrer en un
+   minut qualsevol.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# apartat a)
+set.seed(999) # llavor
+bino <- rbinom(500, 1, 0.5) # genera 200 observacions amb distribució
+table(bino) # freqüències absolutes
+prop.table(table(bino)) # freqüències relatives
+# apartat b)
+lambda <- 12
+ppois(17, lambda, lower.tail = FALSE) # utilitzem la cua dreta
+1 - ppois(17, lambda) # utilitzem la cua esquerra
+barplot(dpois(x = 0:30, 12), names.arg = 0:30, col = "violet")
+```
+
+## Exercici 3
+
+Suposem que som en una fàbrica de fàrmacs per al mal de cap que fa un nombre
+específic de fàrmacs per minut i que segueix una **distribució de Poisson** amb
+paràmetre **ʎ = 0.5**. Determineu:
+
+a) La probabilitat que, en un minut a l'atzar, es generi un únic fàrmac.
+b) La probabilitat que, en un minut a l'atzar, es generin un màxim de 3 fàrmacs.
+c) La probabilitat que es generin 4 fàrmacs en 8 minuts.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# apartat a)
+dpois(c(1), 0.5)
+# apartat b)
+ppois(c(2), 0.5) # volem P( X ≤ 3),
+# apartat c)
+lambda <- 8 / 2
+dpois(c(8), lambda)
+```
+
+## Exercici 4
+
+Disposem d'una urna amb **40 boles**. **25 són grogues i les altres són
+verdes**. Assignarem el valor 1 a les boles grogues i el 0 a les boles de color
+verd:
+
+a) Calculeu la probabilitat d'extracció de cada tipus de bola.
+b) Simulació de l'extracció d'una bola sense reemplaçament.
+c) Simulació de 9 extraccions amb reemplaçament.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# apartat a)
+b_groga <- 25 / 40 # probabilitat boles grogues
+b_groga
+b_verda <- 15 / 40 # probabilitat boles verdes
+b_verda
+b_groga + b_verda # comprovació
+# apartat b)
+# simulem 1 extracció d'una bola sense reemplaçament
+sample(c(1, 0), 1, prob = c(0.625, 0.375))
+# apartat c)
+# simulem 9 extraccions amb reemplaçament
+sample(c(1, 0), 9, rep = T, prob = c(0.625, 0.375))
+```
+
+## Exercici 5
+
+Resoleu els apartats següents:
+
+a) Calculeu la probabilitat d'obtenir quatre cares en llançar sis vegades una
+   moneda perfecta.
+b) Calculeu la probabilitat d'obtenir com a molt quatre cares en llançar sis
+   vegades una moneda perfecta.
+c) Genereu 10 valors pseudoaleatoris d'una distribució X~B(6,0.5).
+d) Genereu una mostra de **grandària 10000** d'una distribució normal **N(3,2)**
+   i creeu un histograma amb les barres de color amb la mostra que se us ha
+   donat.
+e) Tal com hem vist en teoria, veurem si la suma d'aquestes dues variables normals
+   **x1~N(6, 0.5)** i **x2~N(3, 0.6)** també és una variable normal.
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# generem la distribució normal i l'emmagatzemem en un vector
+vect1 <- rnorm(10000, 3, sd = 2)
+head(vect1) # observem les primeres observacions
+hist(
+    vect1,
+    freq = FALSE, main = "Histograma de la distribució simulada",
+    col = "cadetblue2", border = "blue"
+)
+curve(dnorm(x, mean = 3, sd = 2), from = -5, to = 10, add = TRUE)
+```
+
+## Exercici 6
+
+Imaginem un joc en el qual tirem un dau 5 vegades en cada partida i volem
+simular 8 partides del joc i veure partides guanyadores. Les partides
+guanyadores seran aquelles que tinguin un 6 en alguna de les tirades del dau.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+set.seed(999) # llavor d'aleatorització
+sample(1:6, size = 5, replace = TRUE) # generem la partida
+# utilitzem la funció replicate per simular les 8 partides
+numRep <- 8
+repeticions <- replicate(n = numRep, {
+    partida <- sample(1:6, size = 5, replace = TRUE)
+})
+repeticions # mirem el resultat de la replicació de les partides.
+class(repeticions) # veiem quin tipus d'objecte és repeticions
+dim(repeticions) # veiem les dimensions de repeticions
+# amb aquesta instrucció podem veure quines partides són guanyadores
+repeticions == 6
+```
+
+## Exercici 7
+
+Tenim un bol amb 3 tipus de pomes (**golden, fuji, gala**).
+
+a) Quantes permutacions tindrem? La teoria diu que seran 32 permutacions, és a
+   dir, 9 parelles.
+b) Quantes combinacions podem tenir?
+
+D'altra banda, calculeu quants codons cal que tinguin tots els seus nucleòtids
+diferents. Recordeu que els nucleòtids són **A, T, G, C**.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+pomes <- c("golden", "fuji", "gala")
+# apartat a)
+permutations(3, 2, v = pomes, repeats.allowed = TRUE) # amb repetició
+# apartat b)
+permutations(n = 3, r = 2, v = pomes) # sense repetició
+# apartat c)
+permutations(n = 4, r = 3, v = c("A", "T", "G", "C"), repeats.allowed = TRUE)
+```
+
+## Exercici 8
+
+Donada una distribució **N(μ,σ2) ~ N(20,9)**,
+
+a) calculeu els quartils (0.25,0.5,0.75)
+b) calculeu la probabilitat P[X >= 8]
+c) representeu la funció de densitat.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# apartat a)
+# per trobar els quartils fem servir qnorm
+qnorm(c(0.25, 0.5, 0.75), mean = 20, sd = 3, lower.tail = FALSE)
+# apartat b)
+# per calcular la probabilitat utilitzarem pnorm
+pnorm(c(8), mean = 20, sd = 3, lower.tail = FALSE)
+# apartat c)
+x <- seq(10.128, 29.872, length.out = 1000)
+plot(
+    x,
+    dnorm(x, mean = 20, sd = 3),
+    xlab = "x",
+    ylab = "Density",
+    main = paste("Normal Distribution: Mean=20, Standard deviation=3 "),
+    col = "violet"
+)
+```
+
+## Exercici 9
+
+A partir del conjunt de dades `ChickWeight`, busqueu un resum estadístic de la
+variable `weight`. Busqueu una mostra de **30 pollets** amb l'ordre `sample()`
+de manera aleatòria anomenada `Lamevamostra3` i genereu un nou conjunt de dades
+amb tan sols els registres seleccionats a la vostra mostra.
+
+Creeu un dataframe nou, amb aquest subconjunt de dades anomenat `Lamevamostra3`,
+i comproveu si els **30 registres** segueixen una distribució de la variable
+`weight` semblant.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("ChickWeight")
+summary(ChickWeight$weight)
+n <- 30 # grandària de la mostra
+set.seed(969) # hi incloem la llavor perquè ens doni el mateix valor sempre
+lamevamostra3 <- sample(1:nrow(ChickWeight), n, replace = FALSE)
+lamevamostra3
+datamostra <-
+    ChickWeight[c(
+        324, 61, 186, 10, 291, 279, 207, 391, 403, 491, 82, 421, 460, 393, 181,
+        375, 549, 441, 378, 249, 223, 16, 541, 363, 258, 9, 353, 411, 344
+    ), 1] # triem la primera columna, és a dir la variable weight, dels registres de la nostra mostra
+summary(datamostra) # generem el summary del valor dels nostres registres
+```
+
+## Exercici 10
+
+Resoleu els exercicis següents i comenteu els resultats obtinguts: a) S'ha fet
+un estudi a partir del qual se sap que un determinat fàrmac redueix els efectes
+de l'al·lèrgia al pol·len. Amb les dades obtingudes fins al moment, només en el
+4 % dels casos no ha fet efecte.
+
+a) Quin tipus de distribució representa aquest cas? Quina és la probabilitat que
+   si es realitza la tècnica 100 vegades hi hagi més de 5 casos en els quals el
+   fàrmac no sigui efectiu?
+b) La durada mitjana de recuperació d'una grip comuna és de **7 ± 2 dies
+   (mitjana i desviació estàndard)**. Suposant que es tracta d'una distribució
+   normal, calculeu la probabilitat que la recuperació duri entre 6 i 10 dies.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# apartat a)
+# Es tracta d'una distribució binomial, ja que comptem el nombre d'èxits
+# (presentar rebuig) en una seqüència d'assajos (nombre de vegades que s'aplica
+# la tècnica) de Bernoulli (2 possibles estats: sense/amb rebuig) independents
+# entre si.
+1 - pbinom(c(5), 100, 0.04)
+# apartat b)
+# restem les 2 distribucions normals
+pnorm(10, 7, 2) - pnorm(6, 7, 2)
+```
+
+## Cas pràctic (acumulatiu)
+
+En aquest exercici, estudiarem la distribució d'unes dades unidimensionals. Les
+dades que farem servir són el dataset `Faithful` incorporat a la biblioteca
+`Stepfun` d`e `R. Aquest dataset ens dona informació sobre el temps d'espera
+entre erupcions i la durada de l'erupció del guèiser Old Faithful al Parc
+Nacional de Yellowstone, Wyoming, Estats Units
+(https://stat.ethz.ch/R-manual/Rdevel/library/datasets/html/faithful.html).
+
+a) Feu un estudi estadístic descriptiu de la variable `eruptions` i genereu el
+   gràfic de tija i fulles.
+b) Genereu un gràfic de tija i fulles amb aquestes dades.
+c) Genereu un histograma. Definiu intervals menors a l'histograma i afegiu al
+   gràfic la funció de densitat superposada.
+d) Utilitzant la funció `ecdf` de la biblioteca estàndard `Stepfun`, representeu
+   la funció de distribució empírica de la mostra, és a dir, una distribució a
+   partir d'aquestes dades que proporcioni una certa semblança a una distribució
+   veritable associada amb la població.
+e) Creieu que la distribució de l'apartat anterior correspon a alguna
+   distribució estàndard coneguda?
+f) Seleccioneu les erupcions que duren més de 3 minuts. Què podeu dir d'aquestes
+   dades?
+g) Genereu un gràfic amb les dades de l'apartat f). Creieu que s'assemblen a
+   alguna distribució?
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# apartat a)
+data("faithful")
+attach(faithful)
+summary(eruptions)
+fivenum(eruptions)
+# apartat b)
+stem(eruptions, scale = 1, width = 80) # gràfic de tija i fulles
+# apartat c)
+hist(eruptions, seq(1.6, 5.2, 0.2), prob = TRUE, col = "blue")
+lines(density(eruptions, bw = 0.1))
+rug(eruptions)
+# apartat d)
+plot(ecdf(eruptions), do.points = FALSE, verticals = TRUE)
+# apartat e)
+# No s'assembla a una distribució estàndard coneguda. Podem dir que és una
+# distribució acumulada i potser una distribució bimodal.
+# apartat f)
+# Seleccionem les dades amb la condició requerida
+long <- eruptions[eruptions > 3]
+# apartat g)
+plot(ecdf(long), do.points = FALSE, verticals = TRUE)
+x <- seq(3, 5.4, 0.01)
+lines(x, pnorm(x, mean = mean(long), sd = sqrt(var(long))), lty = 3)
+```

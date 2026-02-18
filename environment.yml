@@ -1,0 +1,29 @@
+name: M0.153
+channels:
+  - r
+  - conda-forge
+  - defaults
+  - bioconda
+dependencies:
+  - r-base
+  - bioconductor-biostrings
+  - bioconductor-complexheatmap
+  - bioconductor-genomicfeatures
+  - bioconductor-limma
+  - r-caret
+  - r-gtools
+  - r-igraph
+  - r-kableextra
+  - r-kernlab
+  - r-knitr
+  - r-languageserver
+  - r-mass
+  - r-nortest
+  - r-plotly
+  - r-randomforest
+  - r-rmarkdown
+  - r-rsqlite
+  - r-shiny
+  - r-sqldf
+  - r-survival
+  - r-tidyverse # readr, dplyr, ggplot2, tidyr, etc.

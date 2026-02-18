@@ -1,0 +1,781 @@
+---
+title: Introducció al machine learning amb R
+subtitle: "Programari per a l'anàlisi de dades"
+subject: "Màster universitari en bioinformàtica i bioestadística"
+author: "Robert Buj"
+date: "18/02/2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    latex_engine: xelatex
+header-includes:
+  - \usepackage[catalan]{babel}
+toc-title: "Taula de continguts"
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    warning = FALSE, error = FALSE, message = FALSE,
+    # Opcions per a les figures
+    fig.align = "center"
+)
+suppressPackageStartupMessages({
+    library(datasets)
+    library(dplyr)
+    library(ggplot2)
+    library(knitr)
+    library(kableExtra)
+})
+```
+
+# Exercicis i casos pràctics amb R
+
+## Exercici 1. Models supervisats. Anàlisi de regressió múltiple
+
+A partir del conjunt de dades swiss del paquet `datasets`, calculeu la matriu de
+correlació i, a partir d'aquesta, feu una anàlisi de regressió múltiple. Raoneu
+els resultats.
+
+**Resposta:**
+
+Carreguem el conjunt de dades:
+
+```{r, attr.source=".numberLines"}
+data(swiss)
+```
+
+Fem la matriu de correlació:
+
+```{r, attr.source=".numberLines"}
+cor_matrix <- cor(swiss, method = "pearson")
+```
+
+Podem observar que no hi ha una alta correlació, a priori, entre cap de les
+variables.
+
+Procedim a fer l'anàlisi de regressió múltiple:
+
+```{r, attr.source=".numberLines"}
+# Fem una anàlisi de regressió múltiple
+model <- lm(
+    Fertility ~ Agriculture + Examination + Education + Catholic + Infant.Mortality,
+    data = swiss
+)
+# Mostrem un resum del model
+summary(model)
+```
+
+El resultat anterior indica que el model té ajust moderat i el valor
+d'R-Squared, que no és gaire pròxim a l'1, indica que existeixen variables
+irrellevants en el model. D'altra banda, el p-value tan baix pot indicar que el
+model en general és significatiu però millorable.
+
+## Exercici 2. Models supervisats. Model de classificació SVM
+
+A partir del conjunt de dades `Pima.tr` del paquet `MASS` que fa referència a
+dades de diabetis de pacients índies, feu un model de classificació SVM i feu
+una classificació de pacients per predir si estan en risc de patir diabetis. Per
+fer aquest exercici utilitzeu el paquet `kernlab` per entrenar el model SVM.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el paquet MASS
+library(MASS)
+# Carreguem el conjunt de dades de 'Diabetesin Pima Indian Women'
+data(Pima.tr)
+# Mostrem el dataset
+head(Pima.tr)
+# Dividim el conjunt de dades en entrenament i prova
+set.seed(123)
+indices_entrenament <- sample(1:nrow(Pima.tr), 0.5 * nrow(Pima.tr)) # poden fer-se proves triant un altre criteri
+conjunt_entrenament <- Pima.tr[indices_entrenament, ]
+conjunt_prova <- Pima.tr[-indices_entrenament, ]
+# Carreguem el paquet "kernlab" per a SVM
+library(kernlab)
+# Entrenem un model SVM
+model_svm <- ksvm(type ~ ., data = conjunt_entrenament)
+# Fem prediccions en el conjunt de prova
+prediccions <- predict(model_svm, newdata = conjunt_prova)
+# Calculem la matriu de confusió
+matriu_confusio <- table(Real = conjunt_prova$type, Prediccio = prediccions)
+# Calcular la precisió
+precisio <- sum(diag(matriu_confusio)) / sum(matriu_confusio)
+cat("Precisió del model SVM:", precisio, "\n")
+# Mostrem la matriu de confusió
+matriu_confusio
+```
+
+Els ajustos de predicció del model són del 65 %.
+
+## Exercici 3. Models no supervisats. PCA
+
+A partir del conjunt de dades `Iris`, es demana fer una anàlisi de components
+centrat, per exemple, en les mesures de longitud i amplada del sèpal i el pètal.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el conjunt de dades Iris
+data(iris)
+## ## 1 ## 2 ## 3 ## 4 ## 5 ## 6 5.4 3.9 1.7 0.4 setosa
+# Visualitzem les primeres files del conjunt de dades
+head(iris)
+# Seleccionem les variables rellevants per a l'anàlisi de PCA (per exemple,
+# les mesures de longitud i ample del sèpal i pètal)
+selection_iris <- iris[, c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")]
+# Estandarditzem les dades (és recomanable per a PCA)
+scaled_data <- scale(selection_iris)
+# Fem el PCA
+pca_result_iris <- princomp(scaled_data)
+# Resum dels resultats
+summary(pca_result_iris)
+# Realitzem una representació gràfica de la pca_result_iris
+plot(pca_result_iris)
+```
+
+El primer component 1 (Comp. 1) té una desviació estàndard d'aproximadament
+1.7027, que representa la major variabilitat de totes les components definides
+i, a més, representa el 72.96 %, aproximadament, de la variància total en les
+dades. Per tant, la Comp. 1 és el component més important per explicar la
+variació de les dades.
+
+## Exercici 4. Agrupament jeràrquic. Agrupament jeràrquic aglomeratiu
+
+Feu un agrupament jeràrquic aglomeratiu amb el paquet de dades `birthwt` del
+paquet `MASS`.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Agrupament jeràrquic aglomeratiu. Cada observació és un clúster que es va
+# organitzant fins a convergir en una única branca central.
+library(MASS)
+library(cluster)
+data("birthwt")
+data_birth <- birthwt
+d_agl <- dist(data_birth, method = "euclidean") # especifiquem els valors de distància
+hc_agl <- hclust(d_agl, method = "complete") # calculem el clúster jeràrquic
+plot(hc_agl, cex = 0.6, hang = -1, main = "Dendrograma de clúster") # representem el dendrograma
+```
+
+Si utilitzem la funció `agnes` obtindrem, a més del dendrograma, el coeficient
+d'aglomeració que indica el grau de fortalesa de l'agrupament, millor com més
+pròxim a 1.
+
+```{r, attr.source=".numberLines"}
+# Agrupament jeràrquic aglomeratiu
+hc_ag <- agnes(data_birth, method = "complete") # calculem els clústers jeràrquics
+pltree(hc_ag, cex = 0.6, hang = -1, main = "Dendrograma d'agnes") # representem dendrograma
+hc_ag$ac # calculem el coeficient d'aglomeració
+```
+
+Podem observar que el coeficient d'aglomeració és molt pròxim a 1, fet que
+indica que l'agrupació és forta.
+
+## Exercici 5. Agrupament jeràrquic. Agrupament jeràrquic divisiu
+
+Feu un agrupament jeràrquic divisiu amb el paquet de dades `birthwt` del paquet
+`MASS`.
+
+**Resposta:**
+
+Vegem ara un exemple d'agrupament divisional jeràrquic utilitzant la funció
+`diana`. Carreguem inicialment les dades corresponents al conjunt de dades.
+
+```{r, attr.source=".numberLines"}
+library(MASS)
+library(cluster)
+data_birth <- birthwt
+```
+
+Ara farem l'agrupament jeràrquic:
+
+```{r, attr.source=".numberLines"}
+# Agrupament divisional jeràrquic
+hc_div <- diana(data_birth) # calculem els clústers jeràrquics
+pltree(hc_div, cex = 0.6, hang = -1, main = "Dendrograma de Diana") # representem el dendrograma
+hc_div$dc # calculem el coeficient de divisió
+```
+
+Igualment, el coeficient de divisió és un bon valor indicatiu de l'agrupació.
+Una vegada creats els agrupaments, associem els clústers a les observacions de
+dades. Una opció senzilla seria afegir a l'anterior representació gràfica la
+divisió per clúster de la manera següent:
+
+```{r, attr.source=".numberLines"}
+pltree(hc_div, hang = -1, cex = 0.6)
+rect.hclust(hc_div, k = 10, border = 2:10)
+```
+
+## Exercici 6. Agrupament jeràrquic. Agrupament jeràrquic aglomeratiu
+
+Feu un agrupament jeràrquic de tipus aglomeratiu per al conjunt de dades
+`melanoma` del paquet `MASS`.
+
+**Resposta:**
+
+Carreguem el dataset melanoma t i fem l'agrupament jeràrquic aglomeratiu:
+
+```{r, attr.source=".numberLines"}
+# Agrupament jeràrquic aglomeratiu. Cada observació és un clúster que es va
+# organitzant fins a convergir en una única branca central.
+library(MASS)
+library(cluster)
+data_mel <- Melanoma
+d_agl_m <- dist(data_mel, method = "euclidean") ## especifiquem els valors de distància
+hc_agl_m <- hclust(d_agl_m, method = "complete") ## calculem el clúster jeràrquic
+plot(hc_agl_m, cex = 0.6, hang = -1, main = "Dendrograma de cluster") ## representem el dendrograma
+```
+
+Repetim el mateix procés amb la funció `agnes()`:
+
+```{r, attr.source=".numberLines"}
+hc_ag_m <- agnes(data_mel, method = "complete") # calculem els clústers jeràrquics
+pltree(hc_ag_m, cex = 0.6, hang = -1, main = "Dendrograma d'agnes") # representem dendrograma
+```
+
+Ara calculem el coeficient d'aglomeració:
+
+```{r, attr.source=".numberLines"}
+hc_ag_m$ac # calculem el coeficient d'aglomeració
+```
+
+Podem observar que el coeficient d'aglomeració és molt pròxim a 1, fet que
+indica que l'agrupació és forta.
+
+## Exercici 7. Agrupament jeràrquic. Agrupament jeràrquic divisiu
+
+Feu un agrupament jeràrquic de tipus divisiu per al conjunt de dades `melanoma`
+del paquet `MASS`.
+
+**Resposta:**
+
+Carreguem el dataset corresponent:
+
+```{r, attr.source=".numberLines"}
+library(MASS)
+library(cluster)
+data("Melanoma")
+data_mel <- Melanoma
+head(data_mel)
+```
+
+Realitzem ara un exemple d'agrupament divisional jeràrquic utilitzant la funció
+`diana()`:
+
+```{r, attr.source=".numberLines"}
+# Agrupament divisional jeràrquic
+hc_div_m <- diana(data_mel) # calculem els clústers jeràrquics
+pltree(hc_div_m, cex = 0.6, hang = -1, main = "Dendrograma de Diana") ## representem el dendrograma
+```
+
+Calculem el coeficient de divisió:
+
+```{r, attr.source=".numberLines"}
+hc_div_m$dc # calculem el coeficient de divisió
+```
+
+Una vegada creats els agrupaments, associem els clústers a les observacions de
+dades. Una opció senzilla seria afegir a l'anterior representació gràfica la
+divisió per clúster de la manera següent:
+
+```{r, attr.source=".numberLines"}
+pltree(hc_div_m, hang = -1, cex = 0.6)
+rect.hclust(hc_div_m, k = 10, border = 2:10)
+```
+
+## Exercici 8. Agrupament no jeràrquic
+
+Feu un agrupament no jeràrquic utilitzant el conjunt de dades `birthwt` del
+paquet `MASS`.
+
+**Resposta:**
+
+Carreguem el conjunt de dades:
+
+```{r, attr.source=".numberLines"}
+# invoquem el conjunt de dades birthwt
+data_birth_k <- MASS::birthwt
+head(data_birth_k)
+# comprovem el tipus de variables. Hi ha 10 variables, totes elles numèriques,
+# encara que race es podria considerar categòrica
+str(data_birth_k)
+# considerem race la nostra variable objectiu
+# fem un gràfic de dispersió segons la variable predictora
+pairs(data_birth_k[-11], col = data_birth_k$race)
+# comprovem el grau de correlació entre la resta de variables numèriques
+corr <- cor(data_birth_k[-11])
+corr
+```
+
+A partir d'aquests gràfics podem intuir quines variables poden aportar més
+informació per a la formació de grups. No sembla que hi hagi cap combinació
+clara. Farem la combinació amb la variable `bwt`. Seria adequat transformar la
+variable `race` de tipus sencer en una altra variable de tipus categòric.
+
+```{r, attr.source=".numberLines"}
+# Construïm els grups de clústers, crearem 3 grups que són els tipus de raça (*race*)
+grups_km <- kmeans(data_birth_k, 3) # 10 variables, 3 tipus de raça
+grups_km
+grups_km$cluster # grup al qual pertanyen les dades
+plot(grups_km$cluster)
+```
+
+## Exercici 9. Agrupament no jeràrquic
+
+Feu un agrupament no jeràrquic utilitzant la tècnica `k-means()` per al conjunt
+de dades `melanoma` del paquet `MASS`. Valoreu els resultats per a diferents
+nombres de clústers i definint una determinada variable objectiu. Podeu
+transformar alguna variable sencera de manera categòrica, per exemple, la
+referent a l'estatus.
+
+**Resposta:**
+
+Carreguem el conjunt de dades:
+
+```{r, attr.source=".numberLines"}
+# invoquem el conjunt de dades melanoma
+data("Melanoma")
+head(Melanoma)
+# comprovem el tipus de variables. Hi ha 10 variables, totes elles numèriques,
+# encara que status es podria considerar categòrica
+str(Melanoma)
+# considerem race la nostra variable objectiu
+# fem un gràfic de dispersió segons la variable predictora
+pairs(Melanoma[-7], col = Melanoma$status)
+# comprovem el grau de correlació entre la resta de variables numèriques
+corr_m <- cor(Melanoma[-7])
+corr_m
+```
+
+A partir d'aquests gràfics podem intuir quines variables poden aportar més
+informació per a la formació de grups.
+
+```{r, attr.source=".numberLines"}
+# Construïm els grups de clústers, crearem 3 grups que són els tipus estatus
+grups_km <- kmeans(Melanoma[-7], 3) ## 10 variables, 3 tipus d'estatus
+grups_km
+grups_km$cluster # grup al qual pertanyen les dades
+plot(grups_km$cluster)
+```
+
+## Exercici 10. ANOVA
+
+A partir del conjunt de dades Iris, apliqueu la funció ANOVA i raoneu els
+resultats obtinguts.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el conjunt de dades iris
+data(iris)
+# Fem una anàlisi de variància (ANOVA) per comparar les longituds de pètals
+# entre espècies
+model_anova <- aov(Petal.Length ~ Species, data = iris)
+# Resum de l'ANOVA
+summary(model_anova)
+```
+
+Com podem veure, hi ha una diferència significativa en les longituds dels pètals
+entre almenys un parell d'espècies d'Iris («setosa,» «versicolor,» i
+«virginica»). El valor p és molt petit i indica que les diferències observades
+no són aleatòries i són estadísticament significatives.
+
+## Cas pràctic 1. Models supervisats. Regressió lineal i múltiple
+
+A partir del conjunt de dades `Ovarian` del paquet `survival`, feu un estudi de
+regressió lineal sobre un parell de variables que, a priori, penseu que poden
+presentar correlació, i un estudi de regressió múltiple seleccionant els millors
+predictors.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# Carreguem el paquet survival i el conjunt de dades ovarian
+library(survival)
+data(ovarian)
+# Accedint a Packages / Survival / Ovarian, podem visualitzar la descripció
+# d'aquest conjunt de dades referents a dades de supervivència de càncer
+# d'ovari
+# Visualitzem alguns registres del conjunt de dades d'Ovarian
+head(ovarian)
+# Revisem el tipus de variables d'Ovarian i comprovem que totes elles són numèriques
+str(ovarian)
+# Mostrem un resum estadístic d'Ovarian
+summary(ovarian)
+```
+
+Fem els diagrames de punts de la relació entre variables:
+
+```{r, attr.source=".numberLines"}
+pairs(~ ovarian$futime + ovarian$fustat + ovarian$age + ovarian$resid.ds + ovarian$rx + ovarian$ecog.ps)
+```
+
+Aquest gràfic pot aportar una idea sobre quines variables podrien tenir alguna
+relació; sembla intuir-se que `age` amb `futime`. A continuació, calculem el
+coeficient de correlació d'aquestes dues variables:
+
+```{r, attr.source=".numberLines"}
+# Coeficient de correlació age vs futime que fa referència a l'edat i el temps
+# de supervivència
+cor(ovarian[, c("age", "futime")], use = "complete")
+```
+
+Veiem que el grau de correlació és de -0.648, que és un valor bastant acceptable
+per indicar que existeix alguna correlació entre totes dues variables. Generem
+el model lineal corresponent a l'estimació per mínims quadrats:
+
+```{r, attr.source=".numberLines"}
+RegModel.2 <- lm(futime ~ age, data = ovarian)
+summary(RegModel.2)
+lm(formula = futime ~ age, data = ovarian)
+```
+
+El valor de R-squared ens dona informació sobre el grau d'ajust del model.
+Aquest serà major com més pròxim a 1. En el nostre cas, aquest ajust és del
+0.4204. D'altra banda, el p-value és inferior a 0.05, fet que sembla indicar que
+pogués haver-hi una relació entre les dues variables. Dibuixem la recta de
+mínims quadrats:
+
+```{r, attr.source=".numberLines"}
+plot(ovarian$age, ovarian$futime, xlab = "age", ylab = "futime")
+abline(RegModel.2)
+```
+
+L'anterior representació ens continua reforçant la idea que existeix una
+correlació entre la variable `age` i `futime`. Fem ara un model de regressió
+múltiple per comprovar si la supervivència del càncer d'ovari ve determinada per
+algun factor més. Per fer-ho, inicialment calculem el coeficient de correlació
+de Pearson per a les diferents combinacions:
+
+```{r, attr.source=".numberLines"}
+cor(x = ovarian, method = "pearson")
+```
+
+De les dades anteriors sembla derivar-se que la variable fustat també presenta
+alguna relació amb la variable `futime`.
+
+```{r, attr.source=".numberLines"}
+mrm_ovarian <- lm(ovarian$futime ~ ovarian$fustat + ovarian$age + ovarian$resid.ds + ovarian$rx + ovarian$ecog.ps, data = ovarian)
+summary(mrm_ovarian)
+```
+
+El model anterior generat, una vegada que hem suposat totes les variables com a
+predictors, resulta un coeficient de determinació Multiple R-squared bastant
+acceptable (0.6727), i el p-value també és significatiu. Ara, d'entre tots els
+predictors possibles, hauríem de seleccionar els millors. Fem el següent:
+
+```{r, attr.source=".numberLines"}
+step(mrm_ovarian, direction = "both")
+```
+
+Les variables potencials de ser predictors són les especificades en l'anterior
+Call. Executem de nou el model:
+
+```{r, attr.source=".numberLines"}
+mrm_ovarian_predictors <- (lm(formula = ovarian$futime ~ ovarian$fustat + ovarian$age + ovarian$rx + ovarian$ecog.ps, data = ovarian))
+summary(mrm_ovarian_predictors)
+```
+
+En teoria, i amb les dades de què disposem, aquest seria el model que explicaria
+quins factors influeixen en la supervivència del càncer d'ovari.
+
+## Cas pràctic 2. Models d'aprenentatge automàtic i ANOVA
+
+A partir del conjunt de dades `lung` del paquet `survival`, es demana fer un
+breu estudi aplicant els conceptes estudiats en aquest **LAB**. Per fer-ho, es
+demana dur a terme un estudi de regressió lineal, regressió múltiple, test ANOVA
+i test clustering sobre aquest conjunt de dades. Les variables triades en
+cadascun dels casos possibles a tractar es donen a triar a l'estudiant.
+
+**Resposta:**
+
+Carreguem el conjunt de dades:
+
+```{r, attr.source=".numberLines"}
+# Carreguem el paquet survival i el conjunt de dades lung
+library(survival)
+data("lung")
+# Visualitzem els primers registres
+head(lung)
+```
+
+Revisem l'estructura de dades:
+
+```{r, attr.source=".numberLines"}
+# Analitzem el tipus de variables i observem que totes són numèriques
+str(lung)
+# Eliminem els valors NA
+data_lung <- na.omit(lung)
+# Fem un breu resum estadístic
+summary(lung)
+```
+
+Una vegada que tinguem una primera vista del conjunt de dades lung, procedirem a
+valorar si hi ha alguna correlació clara entre les variables d'aquest conjunt de
+dades.
+
+```{r, attr.source=".numberLines"}
+# Calculem la matriu de correlació
+cor(x = data_lung, method = "pearson")
+# Representem la relació entre les variables
+pairs(data_lung)
+```
+
+Revisant els coeficients de Pearson de cada parell de variables, potser dues
+variables sobre les quals podem calcular el model de regressió lineal són
+`ph.ecog` i `ph.karno`.
+
+```{r, attr.source=".numberLines"}
+# Fem el model de regressió lineal
+lung_rl <- lm(formula = ph.ecog ~ ph.karno, data = data_lung)
+# Mostres el resultat
+summary(lung_rl)
+# Representem el diagrama de punts
+plot(data_lung$ph.karno, data_lung$ph.ecog, xlab = "ph.karno", ylab = "ph.ecog")
+abline(lung_rl)
+```
+
+El model de regressió mostra un R-squared de 0.6768, fet que indica un bon ajust
+d'aquest model. A continuació, farem el model de regressió múltiple avaluant
+quins són els possibles predictors per a la variable `ph.ecog`. Per fer-ho,
+executem les instruccions següents:
+
+```{r, attr.source=".numberLines"}
+# Model de regressió múltiple
+lung_rm <- lm(
+    data_lung$ph.ecog ~ data_lung$inst + data_lung$time
+        + data_lung$status + data_lung$age + data_lung$ph.karno
+        + data_lung$pat.karno + data_lung$meal.cal + data_lung$wt.loss,
+    data = data_lung
+)
+summary(lung_rm)
+```
+
+Una vegada calculats tots els coeficients dels possibles predictors, avaluem
+quins són els millors predictors:
+
+```{r, attr.source=".numberLines"}
+# Analitzem els millors predictors
+step(object = lung_rm, direction = "both", trace = 1)
+```
+
+En el resultat del call anterior s'aprecien quins serien els millors predictors.
+Calculem de nou el model de regressió sobre aquests predictors:
+
+```{r, attr.source=".numberLines"}
+# Model de regressió amb els millors predictors
+lung_rm_p <- lm(
+    formula = data_lung$ph.ecog ~ data_lung$inst + data_lung$time
+        + data_lung$status + data_lung$ph.karno + data_lung$pat.karno
+        + data_lung$wt.loss,
+    data = data_lung
+)
+summary(lung_rm_p)
+```
+
+S'observa que l'ajust del model R-squared (0.7169) s'ha incrementat respecte a
+anteriors càlculs. Fem ara el test ANOVA per a les variables `sex` i `time`.
+
+```{r, attr.source=".numberLines"}
+# definim els vectors de les variables sex i time
+sex_lung <- c(data_lung$sex)
+time_lung <- c(data_lung$time)
+# definim el data frame que guardi aquests dos vectors
+df_lung <- data.frame(time_lung, sex_lung)
+# mostrem els primers registres
+head(df_lung)
+# mostrem el nombre d'observacions per a cada grup (sexe)
+table(df_lung$sex_lung)
+```
+
+S'observa que el nombre d'observacions és desigual en cada grup. Vegem la
+mitjana del temps de supervivència en funció del sexe.
+
+```{r, attr.source=".numberLines"}
+# Calculem la mitjana del temps de supervivència en funció del ph.ecog
+aggregate(time_lung ~ sex_lung, data = df_lung, FUN = mean)
+# Calculem el diagrama de caixes
+boxplot(time_lung ~ sex_lung, data = df_lung, id.method = "y")
+```
+
+Per determinar la normalitat apliquem el test de Kolmogorov-Smirnov, ja que
+disposem de més de 50 observacions.
+
+```{r, attr.source=".numberLines"}
+require(nortest)
+by(data = df_lung, INDICES = df_lung$sex_lung, FUN = function(x) {
+    lillie.test(x$time_lung)
+})
+```
+
+Es pot observar que tots dos grups tenen un p-value inferior a 0.05, amb la qual
+cosa es determina que cap dels dos grups compleix les condicions de normalitat.
+Per tant, no té sentit fer el test d'ANOVA. Finalment, farem un test de
+clustering i, per fer-ho, comencem amb un agrupament jeràrquic aglomeratiu.
+
+```{r, attr.source=".numberLines"}
+# Agrupament jeràrquic aglomeratiu. Cada observació és un clúster que es va
+# organitzant fins a convergir en una única branca central.
+library(MASS)
+library(cluster)
+d_agl_lung <- dist(data_lung, method = "euclidean") # especifiquem els valors de distància
+hc_agl_lung <- hclust(d_agl_lung, method = "complete") # calculem el clúster jeràrquic
+plot(hc_agl_lung, cex = 0.6, hang = -1, main = "Dendrograma de cluster")
+```
+
+Ara fem un agrupament jeràrquic aplicant la funció `agnes()`:
+
+```{r, attr.source=".numberLines"}
+hc_ag_lung <- agnes(data_lung, method = "complete") # calculem els clústers jeràrquics
+pltree(hc_ag_lung, cex = 0.6, hang = -1, main = "Dendrograma d'agnes")
+# representem el dendrograma
+hc_ag_lung$ac # calculem el coeficient d'aglomeració
+```
+
+El coeficient és pròxim a 1, o sigui que l'agrupació és forta. Ara repetim el
+procés utilitzant la funció diana.
+
+```{r, attr.source=".numberLines"}
+# Agrupament divisional jeràrquic
+hc_div_lung <- diana(data_lung) # calculem els clústers jeràrquics
+pltree(hc_div_lung, cex = 0.6, hang = -1, main = "Dendrograma de Diana")
+# representem el dendrograma
+hc_div_lung$dc # calculem el coeficient de divisió
+```
+
+El coeficient també és molt pròxim a 1. Per associar els agrupaments a les
+dades, fem:
+
+```{r, attr.source=".numberLines"}
+pltree(hc_div_lung, hang = -1, cex = 0.6)
+rect.hclust(hc_div_lung, k = 10, border = 2:10)
+```
+
+## Cas pràctic 3. ANOVA
+
+A partir del conjunt de dades `birthwt` del paquet `MASS`, intentarem obtenir
+conclusions sobre la relació existent entre la raça de la mare, tenint en compte
+si aquesta és o no fumadora, i el baix pes del nounat. Aquest estudi podria
+contextualitzar-se en una prova ANOVA d'una via per a dades independents.
+
+**Resposta:**
+
+Definim el conjunt de dades de l'estudi a fer i n'extraiem informació:
+
+```{r, attr.source=".numberLines"}
+# Definició de les dades d'estudi de birthwt
+library(MASS)
+data_birth <- MASS::birthwt
+data_birth$race <-
+    factor(
+        data_birth$race,
+        levels = c(1, 2, 3),
+        labels = c("white", "black", "other")
+    )
+# 1->white,2->black,3->other
+head(data_birth)
+raca <- c(data_birth$race)
+pes <- c(data_birth$bwt)
+df_birth_anova <- data.frame(raca, pes) # definim el conjunt de dades
+head(df_birth_anova, 4) # mostrem la informació del data frame
+table(df_birth_anova$raca) # nombre d'observacions per a cada grup
+```
+
+El nombre d'observacions no és constant per a cada grup i, en algun d'ells, les
+diferències són significatives.
+
+Calculem ara la mitjana i desviació típica per a cada grup.
+
+```{r, attr.source=".numberLines"}
+# Mitjana de pesos per raça
+aggregate(pes ~ raca, data = df_birth_anova, FUN = mean)
+# Desviació típica de pesos per raça
+aggregate(pes ~ raca, data = df_birth_anova, FUN = sd)
+```
+
+Vegem en una representació gràfica si poguessin haver-hi asimetries, dades
+atípiques o altres diferències significatives:
+
+```{r, attr.source=".numberLines"}
+boxplot(data_birth$bwt ~ data_birth$race, data = data_birth, id.method = "y")
+```
+
+Encara que s'observen valors atípics i petites diferències entre la grandària de
+les caixes, els tres grups semblen seguir una distribució bastant simètrica.
+Seguim endavant amb l'estudi i ara comprovem les condicions per aplicar un
+ANOVA. Disposem d'una mostra d'estudi on les observacions de cada grup són
+independents entre si.
+
+A continuació, farem un test que acabarà de determinar la normalitat de la
+distribució. Normalment, s'aplica el test de Shapiro-Wilk si la mostra és
+inferior a 50 observacions, o el test de Kolmogorov-Smirnov, si aquesta mostra
+és superior. En el nostre cas aplicarem aquest últim test.
+
+```{r, attr.source=".numberLines"}
+# Test Kolmogorov-Smirnov
+require(nortest)
+# Loading required package: nortest
+by(data = df_birth_anova, INDICES = df_birth_anova$raca, FUN = function(x) {
+    lillie.test(x$pes)
+})
+```
+
+Els anteriors tests de normalitat mostren falta de normalitat en algun grup, per
+exemple, el grup 3. Això ve determinat pel valor del p-value. En general,
+s'accepta la hipòtesi de normalitat si aquest valor és superior a 0.05. Podem
+comprovar, també, que el grup 1 estaria al límit d'acceptar aquesta normalitat.
+A continuació, hem d'avaluar la variància constant entre els grups, denominada
+homoscedasticitat. Per fer-ho, hi ha diferents tests que podem aplicar en funció
+dels resultats de normalitat; si aquests no són clarament acceptables,
+desestimem utilitzar el test de Fisher i el test de Bartlett i apliquem el test
+de Levene (aconsellable si tenim variables categòriques) o el test de
+Fligner-Killeen.
+
+```{r, attr.source=".numberLines"}
+# Test Fligner-Killen diagnosi homoscedasticitat
+fligner.test(df_birth_anova$pes ~ df_birth_anova$raca, df_birth_anova)
+```
+
+No es detecta falta d'homoscedasticitat. A priori, si no es compleixen les
+condicions d'ANOVA, no seria necessari continuar amb l'estudi. No obstant això,
+excepte casos concrets, convé continuar avançant, ja que posteriors estudis ens
+poden aportar més informació.
+
+```{r, attr.source=".numberLines"}
+## Estudi anova
+anova_birthwt <- aov(
+    df_birth_anova$pes ~ df_birth_anova$raca,
+    data = df_birth_anova
+)
+summary(anova_birthwt)
+plot(anova_birthwt)
+```
+
+Dels resultats anteriors es desprèn que sí que pot haver-hi diferències
+estadísticament significatives entre les races de les mares. En els casos en els
+quals es detecten diferències significatives entre les mitjanes dels grups,
+s'utilitzarien mètodes de comparacions múltiples i correccions.
+
+Les més recomanades són Correcció de Holm i TukeyHSD.
+
+```{r, attr.source=".numberLines"}
+pairwise.t.test(
+    x = df_birth_anova$pes,
+    g = df_birth_anova$raca,
+    p.adjust.method = "holm",
+    pool.sd = TRUE,
+    paired = FALSE,
+    alternative = "two.sided"
+)
+```

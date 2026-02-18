@@ -1,0 +1,460 @@
+---
+title: Estadística descriptiva i gràfics amb R
+subtitle: "Programari per a l'anàlisi de dades"
+subject: "Màster universitari en bioinformàtica i bioestadística"
+author: "Robert Buj"
+date: "18/02/2026"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: false
+    latex_engine: xelatex
+header-includes:
+  - \usepackage[catalan]{babel}
+toc-title: "Taula de continguts"
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    warning = FALSE, error = FALSE, message = FALSE,
+    # Opcions per a les figures
+    fig.align = "center"
+)
+suppressPackageStartupMessages({
+    library(datasets)
+    library(ggplot2)
+    library(knitr)
+    library(kableExtra)
+    library(plotly)
+    library(MASS)
+})
+```
+
+# Exercicis i casos pràctics amb R
+
+Abans de practicar amb aquests exercicis, assegureu-vos que teniu instal·lat el
+paquet **Tidyverse**. Aquest paquet és molt important en l'anàlisi estadística i
+en l'elaboració de gràfics, ja que proveeix una sèrie d'eines destinades a
+facilitar aquests processos. Està compost, entre altres, dels següents paquets:
+**readr**, **dplyr**, **ggplot2**, **tidyr**, etc.
+
+Per a més informació sobre aquest paquet, podeu consultar la pàgina web:
+[https://tidyverse.org/](https://tidyverse.org/).
+
+## Exercici 1
+
+El package d'R datasets [https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html)
+posa a la nostra disposició una sèrie de conjunts de dades amb les quals poder
+treballar com, per exemple, iris, cars o Titanic. Trieu un conjunt de dades.
+
+Haureu de:
+
+- Buscar un resum estadístic de les variables del dataset **Iris** i **Orange**.
+- Generar una taula de freqüències absolutes i una taula de freqüències relatives
+  amb el dataset **Iris**. Totes les taules generades tenen sentit per a
+  vosaltres?
+- Generar una taula de freqüències absolutes amb cadascuna de les variables del
+  conjunt de dades **Orange**. Totes les taules generades tenen sentit per a
+  vosaltres?
+- Generar una taula de doble entrada entre les variables `Tree` i `Age`
+  d'**Orange**.
+
+**Resposta:**
+
+```{r}
+# Resum estadístic de les variables del dataset Iris
+summary(iris)
+# Resum estadístic de les variables del dataset Orange
+summary(Orange)
+# apartat b)
+# freqüències absolutes variables iris
+kable(table(iris$Sepal.Length)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(table(iris$Sepal.Length)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(table(iris$Sepal.Width)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(table(iris$Petal.Length)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(table(iris$Petal.Width)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+# freqüències relatives variables iris
+kable(prop.table(table(iris$Sepal.Length))) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(prop.table(table(iris$Sepal.Width))) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(prop.table(table(iris$Petal.Length))) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(prop.table(table(iris$Petal.Width))) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(prop.table(table(iris$Species))) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+# apartat c)
+kable(table(Orange$Tree)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(table(Orange$age)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+kable(table(Orange$circumference)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+# apartat d)
+kable(table(Orange$Tree, Orange$age)) |>
+    kable_styling(
+        "striped",
+        latex_options = c("striped", "scale_down", "repeat_header"),
+        position = "center",
+        full_width = FALSE
+    )
+```
+
+## Exercici 2
+
+Copieu i executeu el codi següent dels dos vectors:
+
+```{r, attr.source=".numberLines"}
+vect1 <- c(1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 2, 1)
+vect2 <- c(1, 1, 2, 2, 2, 1, 2, 1, 1, 2, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1)
+```
+
+Responeu als apartats següents:
+
+a) Usant el **vect1** creem un nou vector anomenat `Baix_pes` que sigui un
+   factor amb dos nivells. Les etiquetes corresponen a `1 = Baix pes` i `2 =
+   Pes normal`.
+b) Usant el **vect2** creem un nou vector anomenat `Fumador` que sigui un factor amb dos
+nivells. Les etiquetes corresponen a `1 = Fuma` i `2 = No fuma`.
+c) Creem una taula de contingència amb les dues variables anteriors amb el nom `Taula`.
+d) Mirem la relació de les variables anteriors amb la **prova de khi quadrat**.
+e) Mirem també com resulta el **test de Fisher**.
+
+**Resposta:**
+
+a) Creem el factor `Baix_pes`:
+
+```{r, attr.source=".numberLines"}
+Baix_pes <- factor(vect1, levels = c(1, 2), labels = c("Baix pes", "Pes normal"))
+Baix_pes
+```
+
+b) Creem el factor `Fumador`:
+
+```{r, attr.source=".numberLines"}
+Fumador <- factor(vect2, levels = c(1, 2), labels = c("Fuma", "No fuma"))
+Fumador
+```
+
+c) Creem la taula de contingència:
+
+```{r, attr.source=".numberLines"}
+Taula <- table(Baix_pes, Fumador)
+Taula
+```
+
+d) Prova de khi quadrat:
+
+```{r, attr.source=".numberLines"}
+chisq.test(Taula)
+```
+
+e) Test de Fisher:
+
+```{r, attr.source=".numberLines"}
+fisher.test(Taula)
+```
+
+## Exercici 3
+
+a) Activeu el paquet de dades `airquality` del paquet `datasets` i genereu els
+   gràfics següents:
+   - Un gràfic de dispersió de la variable `Ozone` de color `blue` i amb
+     coixinets (#) en comptes de punts.
+   - Un gràfic de caixa de color `red` amb la variable `Temp` amb el títol
+     Temperatura (en graus Fahrenheit).
+b) Activeu el paquet de dades `airmiles` del paquet datasets i genereu els
+   gràfics següents:
+   -  Un gràfic de línies de la sèrie de dades `airmiles` amb el títol Dades de
+      passatgers en vols comercials (en milers) i de color blau (`cadetblue2`) i
+      l'etiqueta de l'eix x amb Milers de passatgers.
+   - Un histograma de la sèrie de dades `airmiles` de color marró (`chocolate2`).
+c) Representeu els quatre gràfics en una única imatge on els vegem junts.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("airquality")
+data("airmiles")
+par(mfrow = c(2, 2)) # matriu 2x2
+plot(airquality$Ozone, col = "blue", pch = "#")
+boxplot(airquality$Temp, col = "red", main = "Temperatura (en graus Fahrenheit)")
+plot(
+    airmiles,
+    main = "Dades de passatgers en vols comercials (milers)",
+    xlab = "Milers de passatgers", col = "cadetblue2"
+)
+hist(airmiles, col = "chocolate2", main = "Histograma de vols comercials")
+```
+
+## Exercici 4
+
+Intenteu reproduir l'**exemple 7** d'aquest LAB amb unes dades simulades per
+vosaltres. No fa falta que siguin semblants, però cal que pugueu fer diferents
+gràfics estadístics amb l'ordre `plot()`.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+set.seed(333)
+x1 <- rnorm(500) # simulem una variable x1
+y1 <- x1 + rnorm(500) # simulem una variable y1
+# creem el gràfic de dispersió de les variables
+plot(x1, y1, main = "Gràfic de dispersió")
+# creem la recta de regressió de color verd
+abline(lm(y1 ~ x1), col = "green")
+# generem el gràfic de densitat per veure com és la distribució
+plot(density(x1), main = "Densitat de x1", col = "blue")
+# generem un gràfic amb les densitats de les dues variables
+lines(density(y1), col = "red")
+```
+
+## Exercici 5
+
+Per poder practicar la creació de gràfics amb **ggplot2**, crearem sis gràfics
+amb diferents característiques i amb diferents conjunts de dades de paquets
+treballats anteriorment.
+
+a) Amb les dades `airquality` del paquet `datasets` creeu un gràfic de dispersió
+   simple, però amb la recta de regressió ajustada de color vermell (`darkred`).
+b) Amb les dades `airquality` del paquet `datasets` creeu un gràfic de dispersió
+   amb les variables `Solar.R` i `Temp` amb les seves respectives etiquetes
+   d'eix. Els colors i la forma dels punts han de ser en funció de la variable
+   `Month` convertida a factor.
+c) Amb les dades de `Birthwt` del paquet `MASS` mostreu la distribució de la
+   variable `age` que tingui la vora de color negre i blau a l'interior de les
+   barres.
+d) Amb les dades de `Birthwt` del paquet `MASS` mostreu la distribució de la
+   variable `age`, però separada en dos gràfics (fumador/no fumador) per la
+   variable `smoke`.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+# a)
+ggplot(airquality, aes(Solar.R, Temp)) +
+    geom_point(size = 3) +
+    geom_smooth(method = "lm", col = "darkred")
+# b)
+# apartat b)
+ggplot(data = airquality, aes(
+    x = Solar.R, y = Temp, col = factor(Month),
+    shape = factor(Month)
+)) +
+    geom_point()
+# c)
+ggplot(birthwt, aes(age)) +
+    geom_histogram(binwidth = 5, fill = "blue", col = "black")
+# d)
+ggplot(birthwt, aes(age)) +
+    geom_histogram(binwidth = 5, fill = "violet", col = "black") +
+    facet_grid(~smoke)
+```
+
+## Exercici 6
+
+Creeu un gràfic amb unes dades extretes del paquet Datasets d'R i deseu-lo com a
+imatge (.jpg) amb el nom `migrafic1.jpg` i, també, com a document en PDF amb el
+nom `migrafic2.pdf`. Feu una captura de pantalla del fitxer generat.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+jpeg("migrafic1.jpg") # obrim el dispositiu gràfic
+data(iris)
+boxplot(iris$Petal.Width, col = "green")
+dev.off # tanquem el dispositiu gràfic
+```
+
+```{r, attr.source=".numberLines"}
+pdf("migrafic2.pdf") # obrim el dispositiu gràfic
+data(iris)
+boxplot(iris$Petal.Width, col = "green")
+dev.off # tanquem el dispositiu gràfic
+```
+
+## Exercici 7
+
+Per practicar la regressió lineal simple usarem el conjunt de dades Orange que
+es troba a la biblioteca **tidyverse** i que té informació sobre tres variables
+(arbre, edat en dies des que es va sembrar l'arbre i circumferència del tronc en
+centímetres) de 35 tarongers.
+
+- Volem saber quin valor de circumferència tindrà un arbre 600 dies després de
+  plantar-lo. Creeu per a això un model lineal i practiqueu la regressió lineal
+  pas a pas amb els passos que heu vist en aquest laboratori.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("Orange")
+head(Orange)
+summary(Orange)
+pairs(Orange)
+cor.test(Orange$age, Orange$circumference)
+mod_reg <- lm(circumference ~ age, data = Orange)
+summary(mod_reg)
+plot(Orange$age, Orange$circumference)
+abline(mod_reg)
+dies <- 600
+mida <- 0.1068 * dies + 17.3997
+print(mida)
+```
+
+## Exercici 8
+
+Repetiu els gràfics (aquells que pugueu) de la regressió lineal simple de
+l'exercici anterior però ara amb **ggplot2**.
+
+Nota: en cas d'haver elaborat l'exercici 7 amb gràfics d'aquest tipus, creeu-los
+amb gràfics base.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+Orange |>
+    ggplot(aes(
+        x = age,
+        y = circumference
+    )) +
+    geom_point()
+Orange |>
+    ggplot(aes(
+        x = age,
+        y = circumference
+    )) +
+    geom_point() +
+    geom_abline(intercept = 17.3997, slope = 0.1068, col = "blue") +
+    geom_vline(xintercept = 800, col = "red")
+```
+
+## Exercici 9
+
+Activeu el conjunt de dades **PlantGrowth** del paquet **datasets** d'R. Aquest
+arxiu té els resultats d'un experiment per comparar els rendiments mitjans pel
+pes sec de les plantes (`weight`) obtinguts sota un control i dues condicions
+de tractament diferents (`group factor`).
+
+- Creieu que hi ha diferències entre tractaments?
+- Es compleixen les condicions per poder aplicar una ANOVA. Quines proves us
+  plantegeu?
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+data("PlantGrowth")
+anova(lm(weight ~ group, data = PlantGrowth))
+```
+
+## Exercici 10
+
+Busqueu informació del paquet **Plotly** per a la creació de gràfics interactius
+i genereu un histograma o un gràfic de barres interactiu. Expliqueu què es pot
+fer amb aquest gràfic.
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+```
+
+## Cas pràctic
+
+A partir d'unes dades bioclíniques o biosanitàries que trieu i que importeu a R,
+expliqueu les seves variables (mínim de vuit variables) i també:
+
+- Feu un resum estadístic complet del dataset i expliqueu els resultats.
+- Feu cinc gràfics bàsics amb les variables, expliqueu-ne el significat i
+  guardeu-los com a imatges (jpeg o bmp).
+- Feu dos gràfics amb l'ordre `ggplot()`, expliqueu-ne el significat i
+  guardeu-los com a imatges (jpeg o bmp).
+- Genereu una regressió lineal entre dues de les seves variables pas a pas i
+  comenteu els resultats obtinguts.
+
+Nota: us deixem diferents enllaços amb repositoris de dades biosanitàries en obert:
+
+- [Repositoris per a l'aprenentatge i la docència en bioestadística](https://ouhsc.edu/bserdac/dthompso/web/statres.htm)
+- [Dades obertes biosanitàries. Biblioteca de Berkeley](https://guides.lib.berkeley.edu/publichealth/healthstatistics/rawdata)
+
+**Resposta:**
+
+```{r, attr.source=".numberLines"}
+```
