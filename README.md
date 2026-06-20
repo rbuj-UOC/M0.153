@@ -47,6 +47,9 @@ No cal crear un devcontainer, ja que el projecte es pot executar i depurar a VS 
 5. Es crearà un fitxer `devcontainer.json` a la carpeta `.devcontainer` del projecte. Pots obrir-lo i revisar-ne el contingut. En el fitxer `devcontainer.json`, pots afegir configuracions addicionals si cal, com ara extensions de VS Code que vulguis instal·lar automàticament dins del contenidor.
 6. Per iniciar el devcontainer, obriu la paleta d'ordres (Ctrl+Shift+P) i seleccioneu `Dev Containers: Reopen in Container`. Això obrirà el projecte en un contenidor de desenvolupament amb la configuració especificada al fitxer `devcontainer.json`.
 
+> [!TIP]
+> Podeu trobar més informació sobre com utilitzar devcontainers a la [documentació oficial](https://aka.ms/devcontainers) de Microsoft o la pàgina del repositori de devcontainers a [devcontainers-miniconda](https://hub.docker.com/r/microsoft/devcontainers-miniconda)
+
 ### Opció 2: Conda
 
 #### Requisits de Conda
