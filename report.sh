@@ -1,17 +1,7 @@
 #!/usr/bin/env bash
 
-# Other possible shebangs:
-##!/bin/bash
-##!/opt/homebrew/bin/bash
-##!/usr/local/bin/bash
-
 LABS=("LAB1" "LAB2" "LAB3" "LAB4" "LAB5" "LAB6")
-
-usage() {
-    echo "Usage: $0 [--pdf] [--html]"
-    echo "  --pdf    Generate only PDF report"
-    echo "  --html   Generate only HTML report"
-}
+ZIP_HTML=true
 
 render_report() {
     local dir="$1"
@@ -31,49 +21,6 @@ render_report() {
     cd ..
 }
 
-# parse command line options
-GENERATE_PDF=true
-GENERATE_HTML=true
-ZIP_HTML=true
-while getopts "h-:" opt; do
-    case "$opt" in
-        -)
-            case "${OPTARG}" in
-                pdf)
-                    GENERATE_HTML=false
-                    ;;
-                html)
-                    GENERATE_PDF=false
-                    ;;
-                help)
-                    usage
-                    exit 0
-                    ;;
-                *)
-                    echo "Invalid option: --${OPTARG}"
-                    exit 1
-                    ;;
-            esac
-            ;;
-        h)
-            usage
-            exit 0
-            ;;
-        *)
-            echo "Invalid option: -${opt}"
-            exit 1
-            ;;
-    esac
+for dir in "${LABS[@]}"; do
+    render_report "$dir" "html"
 done
-
-if [ "$GENERATE_HTML" = true ]; then
-    for dir in "${LABS[@]}"; do
-        render_report "$dir" "html"
-    done
-fi
-
-if [ "$GENERATE_PDF" = true ]; then
-    for dir in "${LABS[@]}"; do
-        render_report "$dir" "pdf"
-    done
-fi
